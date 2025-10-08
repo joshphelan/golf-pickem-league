@@ -1,313 +1,117 @@
 # Next Steps - Golf Fantasy League
 
-> **Current Phase**: Phase 1 - Backend Foundation  
-> **Last Updated**: October 7, 2025
+> Last Updated: October 7, 2025
+> Current Phase: Phase 2 - Golf API Integration
 
-## πŸ"Œ Overview
+## Progress
 
-This document outlines the immediate next steps and clarifies the division of responsibilities between you (the developer) and the AI assistant.
+### Phase 1: Backend Foundation - COMPLETE
 
----
+**Completed:**
+- Backend project structure
+- PostgreSQL database with all tables
+- JWT authentication system
+- Three-tier permission system (user/league_admin/owner/primary_owner)
+- User management API endpoints
+- Primary owner auto-detection
+- API tested and working at http://localhost:8000
 
-## πŸ'₯ Division of Responsibilities
+### Phase 2: Golf API & League Management - IN PROGRESS
 
-### πŸ€– AI Assistant Will:
-- Generate code for all backend and frontend files
-- Create database models and migrations
-- Implement API endpoints and business logic
-- Write component code and styling
-- Provide configuration files
-- Debug and fix issues
-- Suggest best practices and optimizations
+**Next Tasks:**
+1. Implement Golf API service integration
+2. Create tournament sync endpoints
+3. Import historical tournament data for testing
+4. Build league creation/management endpoints
+5. Implement team roster and player draft system
 
-### πŸ'€ You (Developer) Will:
-- Review and approve code changes
-- Test endpoints and features manually
-- Provide the Golf API key in environment variables
-- Run terminal commands (migrations, installs, etc.)
-- Make final decisions on design/architecture changes
-- Test the application in real browsers
-- Deploy to production servers
-- Manually create the first admin user in the database
+## Quick Reference
 
----
+### To Resume Development
 
-## βœ… Immediate Action Items
-
-### Step 1: Environment Setup (You)
 ```bash
-# 1. Ensure you have the Golf API key ready
-# You mentioned you already have this! βœ…
+# 1. Start Docker Desktop
+# 2. Start PostgreSQL
+docker-compose up -d postgres
 
-# 2. Create .env file with your API key
-# The AI will generate .env.example, you'll copy and add real values
+# 3. Start backend
+cd backend
+venv\Scripts\activate  # Windows: venv\Scripts\activate
+uvicorn app.main:app --reload
+
+# 4. Open API docs
+# http://localhost:8000/docs
 ```
 
-### Step 2: Project Structure Creation (AI)
-The AI will create:
-- [ ] Complete directory structure
-- [ ] `.env.example` template
-- [ ] `docker-compose.yml` for PostgreSQL
-- [ ] Backend `requirements.txt`
-- [ ] Frontend `package.json`
-- [ ] Git `.gitignore` files
+### First Time Setup
 
-### Step 3: Backend Foundation (AI + You)
-
-**AI Creates:**
-- [ ] FastAPI app structure (`backend/app/main.py`)
-- [ ] Configuration module (`backend/app/config.py`)
-- [ ] Database setup (`backend/app/database.py`)
-- [ ] All SQLAlchemy models
-- [ ] Alembic configuration
-- [ ] Initial database migration
-
-**You Run:**
 ```bash
+# Generate SECRET_KEY for .env
+python -c "import secrets; print(secrets.token_hex(32))"
+
+# Create database tables
 cd backend
-python -m venv venv
-source venv/bin/activate  # or venv\Scripts\activate on Windows
-pip install -r requirements.txt
 alembic upgrade head
 ```
 
-### Step 4: Authentication System (AI + You)
+### Your Accounts
 
-**AI Implements:**
-- [ ] User model with approval fields
-- [ ] Signup endpoint (`POST /api/auth/signup`)
-- [ ] Login endpoint (`POST /api/auth/login`)
-- [ ] JWT utilities
-- [ ] Auth dependencies (`get_current_user`, `require_admin`)
+- **Primary Owner**: First user to sign up (auto-assigned)
+- **Database**: golf_league_db (via Docker)
+- **API Key**: Stored in `.env` as GOLF_API_KEY
 
-**You Test:**
-```bash
-# Start the server
-uvicorn app.main:app --reload
+## Permission Levels
 
-# Test signup
-curl -X POST http://localhost:8000/api/auth/signup \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@test.com","username":"test","password":"test123"}'
+1. **Regular User**: Can join leagues and draft teams
+2. **League Admin**: Can create and manage leagues
+3. **Owner**: Can approve users and grant permissions
+4. **Primary Owner**: Protected, cannot be removed
 
-# Manually approve user in database
-# Then test login
-```
+## API Endpoints
 
-### Step 5: Admin System (AI + You)
+### Authentication
+- `POST /api/auth/signup` - Register (first user = primary owner)
+- `POST /api/auth/login` - Get JWT token
+- `GET /api/auth/me` - Current user info
 
-**AI Implements:**
-- [ ] Admin user management endpoints
-- [ ] Admin middleware/dependencies
+### User Management (Owner only)
+- `GET /api/auth/admin/users` - List all users
+- `PATCH /api/auth/admin/users/{id}/approve` - Approve user
+- `PATCH /api/auth/admin/users/{id}/grant-league-admin` - Grant league admin
+- `PATCH /api/auth/admin/users/{id}/grant-owner` - Grant owner privileges
 
-**You Do:**
-```sql
--- Manually set first user as admin in database
-UPDATE users SET is_admin = TRUE, is_approved = TRUE WHERE email = 'your@email.com';
-```
+More endpoints will be added in Phase 2.
 
----
+## Environment Variables
 
-## πŸ"† Phase 1 Detailed Checklist
+Required in `.env`:
+- `GOLF_API_KEY` - Your API key from Free Golf API
+- `SECRET_KEY` - Generated hex string for JWT signing
+- `DATABASE_URL` - PostgreSQL connection string
+- `NEXT_PUBLIC_API_URL` - Backend URL for frontend
 
-### Week 1 - Backend Foundation
+## Troubleshooting
 
-#### Day 1-2: Project Setup & Database
-- [ ] **AI**: Create complete project structure
-- [ ] **AI**: Write SQLAlchemy models for all tables
-- [ ] **AI**: Configure Alembic
-- [ ] **AI**: Create initial migration
-- [ ] **You**: Copy `.env.example` to `.env` and add your API key
-- [ ] **You**: Start PostgreSQL: `docker-compose up -d postgres`
-- [ ] **You**: Run migration: `alembic upgrade head`
-- [ ] **You**: Verify database tables created
+**Cannot connect to database**
+- Check Docker is running: `docker ps`
+- Restart PostgreSQL: `docker-compose restart postgres`
 
-#### Day 3: Authentication
-- [ ] **AI**: Implement signup/login endpoints
-- [ ] **AI**: Create JWT utilities
-- [ ] **AI**: Write auth dependencies
-- [ ] **You**: Test signup endpoint
-- [ ] **You**: Test login endpoint
-- [ ] **You**: Verify JWT token generation
+**Import errors**
+- Activate virtual environment: `venv\Scripts\activate`
 
-#### Day 4: Admin Management
-- [ ] **AI**: Implement admin endpoints
-- [ ] **AI**: Add admin authorization checks
-- [ ] **You**: Manually set yourself as admin in DB
-- [ ] **You**: Test admin endpoints with your token
-- [ ] **You**: Verify non-admin users get 403 errors
+**Config validation errors**
+- Verify `.env` exists in project root
+- Check all required variables are set
 
-#### Day 5: Free Golf API Integration (Part 1)
-- [ ] **AI**: Create `golf_api_service.py` with all methods
-- [ ] **AI**: Implement error handling and retries
-- [ ] **AI**: Write script to import historical tournaments
-- [ ] **You**: Add your API key to `.env`
-- [ ] **You**: Run import script to load 2-3 tournaments
-- [ ] **You**: Verify tournament data in database
+**Token authentication fails**
+- Login again to get fresh token
+- Verify SECRET_KEY hasn't changed
 
----
+## Next Phase Tasks
 
-## 🎯 Current Sprint Goal
-
-**Get to this milestone:**
-A working backend where:
-1. Users can sign up and login
-2. Admins can approve users
-3. Historical tournament data is imported
-4. Authentication is secure and tested
-
-**After This Sprint:**
-We'll move to Phase 2 (League Management) where users can create/join leagues.
-
----
-
-## πŸ'' Best Practices for Working Together
-
-### Communication Protocol
-
-1. **Starting a Task**
-   - You: "Let's implement [feature name]"
-   - AI: Reviews plan, asks clarifying questions if needed, then implements
-
-2. **Testing a Feature**
-   - AI: Provides code and testing instructions
-   - You: Run tests and report results
-   - AI: Fixes any issues you find
-
-3. **Making Changes**
-   - Be specific: "Change the team_size default from 4 to 6"
-   - Reference files: "In `backend/app/models/league.py`..."
-   - AI will make precise changes
-
-### When to Ask the AI
-
-βœ… **Do ask for:**
-- Complete file implementations
-- Bug fixes and debugging help
-- Code explanations
-- Alternative approaches
-- Best practice recommendations
-- SQL queries for testing
-- Example curl commands
-- Documentation
-
-❌ **Don't need to ask for:**
-- Permission to create files (just tell AI what you need)
-- Whether something is possible (AI will tell you if not)
-- Approval on implementation details (AI follows the plan)
-
-### File Organization
-
-The AI will:
-- Always follow the structure in `.cursorrules`
-- Create files in the correct directories
-- Use consistent naming conventions
-- Add appropriate comments
-- Follow Python/TypeScript best practices
-
----
-
-## πŸš€ Starting Command
-
-Ready to begin? Say:
-
-**"Let's start Phase 1. Create the complete backend project structure with all configuration files, then implement the database models."**
-
-The AI will:
-1. Create all directories
-2. Generate `requirements.txt`
-3. Create `docker-compose.yml`
-4. Write all SQLAlchemy models
-5. Set up Alembic
-6. Create initial migration
-7. Provide you with setup instructions
-
----
-
-## πŸ"„ Handoff Protocol
-
-If you need to stop and resume later:
-
-1. **Ending a Session**
-   - AI will summarize what was completed
-   - AI will note any pending tasks
-   - Everything is documented in git commits
-
-2. **Resuming a Session**
-   - Say: "Check the current project status and continue where we left off"
-   - New AI agent will read:
-     - `.cursorrules` (project conventions)
-     - `README.md` (project overview)
-     - `IMPLEMENTATION_PLAN.md` (full plan)
-     - `NEXT_STEPS.md` (this file with progress)
-     - Recent git commits
-   - New agent will pick up seamlessly
-
----
-
-## ✏️ Progress Tracking
-
-Update this section as you complete tasks:
-
-### Completed βœ…
-- [x] Project planning
-- [x] API provider selected (Free Golf API)
-- [x] Documentation created
-- [x] Repository initialized
-- [x] API key obtained
-- [x] Backend project structure created
-- [x] Database models and migrations
-- [x] PostgreSQL setup with Docker
-- [x] Authentication system with JWT
-- [x] Three-tier permission system (user/league_admin/owner/primary_owner)
-- [x] User management endpoints
-- [x] Phase 1 Backend Foundation - COMPLETE
-
-### In Progress πŸ"„
-- [ ] Phase 2: Golf API Integration & League Management
-
-### Blocked ⛔
-- None currently
-
----
-
-## πŸ"ž Getting Help
-
-If you get stuck:
-
-1. **Check documentation first**
-   - `.cursorrules` - coding standards
-   - `IMPLEMENTATION_PLAN.md` - feature details
-   - API docs - https://freewebapi.com/sports-apis/golf-api/
-
-2. **Ask the AI**
-   - Describe the error/issue
-   - Share relevant error messages
-   - AI will debug and provide solutions
-
-3. **Common Issues**
-   - Database connection: Check `DATABASE_URL` in `.env`
-   - API errors: Verify `GOLF_API_KEY` is correct
-   - Import errors: Make sure virtual environment is activated
-   - CORS issues: Check frontend URL in CORS config
-
----
-
-## πŸ"Š Success Metrics
-
-We'll know Phase 1 is complete when:
-- [ ] Backend runs without errors
-- [ ] Database has all tables created
-- [ ] User can successfully sign up
-- [ ] User can successfully log in and receive JWT
-- [ ] Admin can approve users
-- [ ] At least 2 historical tournaments imported
-- [ ] All endpoints respond correctly
-- [ ] Tests pass (we'll write basic tests)
-
----
-
-**Ready to start? Let's build this! πŸŒοΈβ€β™‚οΈ**
-
-Tell the AI: **"Let's begin Phase 1"** and we'll get started with the backend structure.
-
+See `IMPLEMENTATION_PLAN.md` for detailed Phase 2 plan including:
+- Golf API service implementation
+- Tournament data models and sync
+- League creation endpoints
+- Team management and draft system
+- Scoring calculations

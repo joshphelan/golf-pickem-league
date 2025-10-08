@@ -4,7 +4,7 @@ FastAPI backend for the Golf Fantasy League application.
 
 ## Setup
 
-### 1. Create Virtual Environment
+### Create Virtual Environment
 
 ```bash
 cd backend
@@ -17,13 +17,13 @@ venv\Scripts\activate
 source venv/bin/activate
 ```
 
-### 2. Install Dependencies
+### Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Configure Environment
+### Configure Environment
 
 Create a `.env` file in the **project root** (not in backend folder):
 
@@ -52,14 +52,14 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 python -c "import secrets; print(secrets.token_hex(32))"
 ```
 
-### 4. Start Database
+### Start Database
 
 ```bash
 # From project root
 docker-compose up -d postgres
 ```
 
-### 5. Run Migrations
+### Run Migrations
 
 ```bash
 # Make sure you're in backend/ directory with venv activated
@@ -67,16 +67,16 @@ alembic revision --autogenerate -m "Initial migration"
 alembic upgrade head
 ```
 
-### 6. Start Development Server
+### Start Development Server
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
-API will be available at:
-- **API**: http://localhost:8000
-- **Docs**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
+API available at:
+- http://localhost:8000
+- http://localhost:8000/docs (interactive documentation)
+- http://localhost:8000/redoc
 
 ## Database Models
 
@@ -90,14 +90,14 @@ API will be available at:
 
 ## API Endpoints
 
-### Authentication
+**Authentication:**
 - `POST /api/auth/signup` - Register new user
 - `POST /api/auth/login` - Login and get JWT token
 - `GET /api/auth/me` - Get current user info
 - `GET /api/auth/admin/users` - List all users (admin)
 - `PATCH /api/auth/admin/users/{id}` - Approve/modify users (admin)
 
-More endpoints will be added in subsequent phases.
+More endpoints added in Phase 2.
 
 ## Testing
 

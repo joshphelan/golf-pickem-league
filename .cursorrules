@@ -43,45 +43,45 @@ Fantasy golf web application where users join private leagues, manually draft PG
 ## Project Structure
 ```
 golf-pickem-league/
-β"œβ"€β"€ backend/
-β"‚   β"œβ"€β"€ app/
-β"‚   β"‚   β"œβ"€β"€ main.py              # FastAPI app entry
-β"‚   β"‚   β"œβ"€β"€ config.py            # Settings from env
-β"‚   β"‚   β"œβ"€β"€ database.py          # SQLAlchemy setup
-β"‚   β"‚   β"œβ"€β"€ models/              # SQLAlchemy models
-β"‚   β"‚   β"‚   β"œβ"€β"€ user.py
-β"‚   β"‚   β"‚   β"œβ"€β"€ league.py
-β"‚   β"‚   β"‚   └── tournament.py
-β"‚   β"‚   β"œβ"€β"€ routes/              # API endpoints
-β"‚   β"‚   β"‚   β"œβ"€β"€ auth.py
-β"‚   β"‚   β"‚   β"œβ"€β"€ leagues.py
-β"‚   β"‚   β"‚   β"œβ"€β"€ teams.py
-β"‚   β"‚   β"‚   └── tournaments.py
-β"‚   β"‚   β"œβ"€β"€ services/            # Business logic
-β"‚   β"‚   β"‚   β"œβ"€β"€ golf_api_service.py
-β"‚   β"‚   β"‚   └── scoring_service.py
-β"‚   β"‚   β"œβ"€β"€ schemas/             # Pydantic models
-β"‚   β"‚   └── utils/               # Dependencies, helpers
-β"‚   β"œβ"€β"€ alembic/                 # Database migrations
-β"‚   β"œβ"€β"€ requirements.txt
-β"‚   └── Dockerfile
-β"œβ"€β"€ frontend/
-β"‚   β"œβ"€β"€ app/                     # Next.js app router
-β"‚   β"‚   β"œβ"€β"€ login/
-β"‚   β"‚   β"œβ"€β"€ dashboard/
-β"‚   β"‚   β"œβ"€β"€ leagues/[id]/
-β"‚   β"‚   β"œβ"€β"€ teams/[id]/
-β"‚   β"‚   β"œβ"€β"€ join/[code]/
-β"‚   β"‚   └── admin/
-β"‚   β"œβ"€β"€ components/
-β"‚   β"œβ"€β"€ lib/
-β"‚   β"‚   └── api.ts              # API client
-β"‚   β"œβ"€β"€ package.json
-β"‚   └── next.config.js
-β"œβ"€β"€ docker-compose.yml
-β"œβ"€β"€ .env.example
-β"œβ"€β"€ README.md
-└── IMPLEMENTATION_PLAN.md
+  backend/
+    app/
+      main.py              # FastAPI app entry
+      config.py            # Settings from env
+      database.py          # SQLAlchemy setup
+      models/              # SQLAlchemy models
+        user.py
+        league.py
+        tournament.py
+      routes/              # API endpoints
+        auth.py
+        leagues.py
+        teams.py
+        tournaments.py
+      services/            # Business logic
+        golf_api_service.py
+        scoring_service.py
+      schemas/             # Pydantic models
+      utils/               # Dependencies, helpers
+    alembic/               # Database migrations
+    requirements.txt
+    Dockerfile
+  frontend/
+    app/                   # Next.js app router
+      login/
+      dashboard/
+      leagues/[id]/
+      teams/[id]/
+      join/[code]/
+      admin/
+    components/
+    lib/
+      api.ts               # API client
+    package.json
+    next.config.js
+  docker-compose.yml
+  .env.example
+  README.md
+  IMPLEMENTATION_PLAN.md
 ```
 
 ## API Integration - Free Golf API
