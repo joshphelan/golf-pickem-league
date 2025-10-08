@@ -1,0 +1,155 @@
+# Golf Fantasy League - Cursor Rules
+
+## Project Overview
+Fantasy golf web application where users join private leagues, manually draft PGA Tour golfers before tournaments, and compete based on combined stroke scores with real-time leaderboard updates.
+
+## Tech Stack
+- **Frontend**: Next.js 14 + TypeScript + Tailwind CSS
+- **Backend**: FastAPI + Python 3.11+
+- **Database**: PostgreSQL
+- **API**: Free Golf API (https://freewebapi.com/sports-apis/golf-api/)
+- **Deployment**: Vercel (frontend) + DigitalOcean (backend)
+
+## Architecture Principles
+1. **No live draft complexity** - First-come-first-served with manual team entry
+2. **Polling over WebSockets** - Frontend polls every 30-60s for simplicity
+3. **Admin approval required** - Users must be manually approved to create leagues
+4. **Private leagues only** - Invite code system for joining
+
+## Code Style & Conventions
+
+### Backend (FastAPI)
+- Use dependency injection for auth (`get_current_user`, `require_admin`)
+- Separate concerns: routes → services → models
+- All API endpoints prefixed with `/api/`
+- Use Pydantic models for request/response validation
+- SQLAlchemy for ORM, Alembic for migrations
+- Environment variables in `.env`, loaded via `pydantic-settings`
+
+### Frontend (Next.js)
+- Use App Router (not Pages Router)
+- Client components only when needed (use `'use client'`)
+- API calls in separate `lib/api.ts` file
+- Store JWT in localStorage, attach to all requests
+- Tailwind CSS for styling (no custom CSS files)
+- TypeScript strict mode enabled
+
+### Database
+- Use UUIDs for all primary keys
+- Timestamps: `created_at`, `updated_at` on all tables
+- Soft deletes preferred over hard deletes
+- Foreign keys always have `ON DELETE CASCADE` or `SET NULL` explicitly defined
+
+## Project Structure
+```
+golf-pickem-league/
+β"œβ"€β"€ backend/
+β"‚   β"œβ"€β"€ app/
+β"‚   β"‚   β"œβ"€β"€ main.py              # FastAPI app entry
+β"‚   β"‚   β"œβ"€β"€ config.py            # Settings from env
+β"‚   β"‚   β"œβ"€β"€ database.py          # SQLAlchemy setup
+β"‚   β"‚   β"œβ"€β"€ models/              # SQLAlchemy models
+β"‚   β"‚   β"‚   β"œβ"€β"€ user.py
+β"‚   β"‚   β"‚   β"œβ"€β"€ league.py
+β"‚   β"‚   β"‚   └── tournament.py
+β"‚   β"‚   β"œβ"€β"€ routes/              # API endpoints
+β"‚   β"‚   β"‚   β"œβ"€β"€ auth.py
+β"‚   β"‚   β"‚   β"œβ"€β"€ leagues.py
+β"‚   β"‚   β"‚   β"œβ"€β"€ teams.py
+β"‚   β"‚   β"‚   └── tournaments.py
+β"‚   β"‚   β"œβ"€β"€ services/            # Business logic
+β"‚   β"‚   β"‚   β"œβ"€β"€ golf_api_service.py
+β"‚   β"‚   β"‚   └── scoring_service.py
+β"‚   β"‚   β"œβ"€β"€ schemas/             # Pydantic models
+β"‚   β"‚   └── utils/               # Dependencies, helpers
+β"‚   β"œβ"€β"€ alembic/                 # Database migrations
+β"‚   β"œβ"€β"€ requirements.txt
+β"‚   └── Dockerfile
+β"œβ"€β"€ frontend/
+β"‚   β"œβ"€β"€ app/                     # Next.js app router
+β"‚   β"‚   β"œβ"€β"€ login/
+β"‚   β"‚   β"œβ"€β"€ dashboard/
+β"‚   β"‚   β"œβ"€β"€ leagues/[id]/
+β"‚   β"‚   β"œβ"€β"€ teams/[id]/
+β"‚   β"‚   β"œβ"€β"€ join/[code]/
+β"‚   β"‚   └── admin/
+β"‚   β"œβ"€β"€ components/
+β"‚   β"œβ"€β"€ lib/
+β"‚   β"‚   └── api.ts              # API client
+β"‚   β"œβ"€β"€ package.json
+β"‚   └── next.config.js
+β"œβ"€β"€ docker-compose.yml
+β"œβ"€β"€ .env.example
+β"œβ"€β"€ README.md
+└── IMPLEMENTATION_PLAN.md
+```
+
+## API Integration - Free Golf API
+
+### Available Endpoints
+- `GET /world-ranking` - World rankings for year
+- `GET /fedexcup-ranking` - FedExCup rankings (live during tournaments)
+- `GET /organizations` - Supported organizations
+- `GET /schedules` - Tournament schedules by year/org
+- `GET /players` - Search players by name/ID
+- `GET /tournaments` - Tournament metadata, players, courses, earnings
+- `GET /leaderboards` - Live leaderboard data
+- `GET /scorecards` - Detailed shot-by-shot scorecards
+- `GET /points` - FedExCup points per player
+- `GET /earnings` - Player earnings per tournament
+
+### Data Sync Strategy
+1. Import 2-3 completed tournaments for testing/demo
+2. Use APScheduler to fetch live scores every 2-5 minutes during active tournaments
+3. Store in `player_scores` table with round-by-round breakdown
+4. Frontend polls backend every 30-60 seconds
+
+## Scoring System
+- **Team Size**: 4 golfers per team (configurable via `league_settings`)
+- **Calculation**: Sum of all golfers' final stroke scores (e.g., -7 + -3 + -1 + 2 = -9)
+- **Lower score wins** (standard golf scoring)
+- **Missed cuts**: Retain positive scores naturally
+
+## Authentication Flow
+1. User signs up → `is_approved = FALSE`
+2. Admin approves user via admin panel
+3. User logs in → receives JWT
+4. Protected routes check `is_approved` status
+5. Admin routes check `is_admin` flag
+
+## Development Workflow
+1. Always check `README.md` and `IMPLEMENTATION_PLAN.md` first
+2. Create feature branches, not direct commits to main
+3. Test API endpoints with sample data before frontend integration
+4. Use environment variables for all secrets/config
+5. Document any deviations from plan in commit messages
+
+## Common Commands
+```bash
+# Backend
+cd backend
+python -m venv venv
+source venv/bin/activate  # or `venv\Scripts\activate` on Windows
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+
+# Frontend
+cd frontend
+npm install
+npm run dev
+
+# Database
+docker-compose up postgres -d
+alembic upgrade head
+
+# Full stack
+docker-compose up
+```
+
+## Important Notes
+- API key stored in `.env` as `GOLF_API_KEY`
+- First user must be manually set as admin in database
+- League invite codes are 8-character alphanumeric
+- Draft deadline enforced in backend (no changes after)
+- Player can only be drafted once per league (not globally)
+

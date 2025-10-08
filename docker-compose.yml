@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: golf_league_db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-golf_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-golf_password}
+      POSTGRES_DB: ${POSTGRES_DB:-golf_league_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-golf_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend service (uncomment when backend is ready)
+  # backend:
+  #   build: ./backend
+  #   container_name: golf_league_backend
+  #   environment:
+  #     DATABASE_URL: postgresql://${POSTGRES_USER:-golf_user}:${POSTGRES_PASSWORD:-golf_password}@postgres:5432/${POSTGRES_DB:-golf_league_db}
+  #     GOLF_API_KEY: ${GOLF_API_KEY}
+  #     SECRET_KEY: ${SECRET_KEY}
+  #   ports:
+  #     - "8000:8000"
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   volumes:
+  #     - ./backend:/app
+  #   command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+volumes:
+  postgres_data:
+
