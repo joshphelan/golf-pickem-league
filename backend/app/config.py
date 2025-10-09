@@ -10,9 +10,9 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str
     
-    # Golf API
+    # Golf API (RapidAPI)
     GOLF_API_KEY: str
-    GOLF_API_BASE_URL: str = "https://api.freewebapi.com"
+    GOLF_API_BASE_URL: str = "https://live-golf-data.p.rapidapi.com"
     
     # JWT Authentication
     SECRET_KEY: str

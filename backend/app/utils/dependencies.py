@@ -103,11 +103,4 @@ def require_primary_owner(current_user: User = Depends(get_current_user)) -> Use
     return current_user
 
 
-# Backward compatibility alias
-def require_admin(current_user: User = Depends(get_current_user)) -> User:
-    """
-    Legacy alias for require_owner.
-    Use require_owner or require_league_admin instead.
-    """
-    return require_owner(current_user)
 

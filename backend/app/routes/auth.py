@@ -7,7 +7,7 @@ from ..database import get_db
 from ..models.user import User
 from ..schemas.auth import UserCreate, UserLogin, Token, UserResponse
 from ..utils.auth import hash_password, verify_password, create_access_token
-from ..utils.dependencies import get_current_user, require_admin, require_owner, require_league_admin
+from ..utils.dependencies import get_current_user, require_owner, require_league_admin
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 

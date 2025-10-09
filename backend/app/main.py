@@ -3,6 +3,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .config import settings
 from .routes import auth_router
+from .routes.tournaments import router as tournaments_router
+from .routes.leagues import router as leagues_router
+from .routes.teams import router as teams_router
 
 # Create FastAPI app
 app = FastAPI(
@@ -24,6 +27,9 @@ app.add_middleware(
 
 # Include routers
 app.include_router(auth_router)
+app.include_router(tournaments_router)
+app.include_router(leagues_router)
+app.include_router(teams_router)
 
 # Health check endpoint
 @app.get("/")

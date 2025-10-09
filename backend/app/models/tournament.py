@@ -29,6 +29,7 @@ class Tournament(Base):
     # Relationships
     leagues = relationship("League", back_populates="tournament", cascade="all, delete-orphan")
     player_scores = relationship("PlayerScore", back_populates="tournament", cascade="all, delete-orphan")
+    tournament_players = relationship("TournamentPlayer", back_populates="tournament", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<Tournament {self.name} ({self.year})>"
@@ -52,9 +53,37 @@ class Player(Base):
     # Relationships
     team_players = relationship("TeamPlayer", back_populates="player", cascade="all, delete-orphan")
     scores = relationship("PlayerScore", back_populates="player", cascade="all, delete-orphan")
+    tournament_players = relationship("TournamentPlayer", back_populates="player", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<Player {self.full_name}>"
+
+
+class TournamentPlayer(Base):
+    """Players registered for a specific tournament."""
+    __tablename__ = "tournament_players"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tournament_id = Column(UUID(as_uuid=True), ForeignKey("tournaments.id", ondelete="CASCADE"), nullable=False)
+    player_id = Column(UUID(as_uuid=True), ForeignKey("players.id", ondelete="CASCADE"), nullable=False)
+    
+    # Player status in tournament
+    status = Column(String, default='registered')  # 'registered', 'withdrawn', 'missed_cut', 'active', 'completed'
+    
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    
+    # Relationships
+    tournament = relationship("Tournament", back_populates="tournament_players")
+    player = relationship("Player", back_populates="tournament_players")
+    
+    # Unique constraint: player can only be registered once per tournament
+    __table_args__ = (
+        UniqueConstraint('tournament_id', 'player_id', name='unique_player_per_tournament'),
+    )
+    
+    def __repr__(self):
+        return f"<TournamentPlayer {self.player_id} in {self.tournament_id}>"
 
 
 class PlayerScore(Base):
