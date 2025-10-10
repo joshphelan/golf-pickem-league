@@ -20,9 +20,11 @@ python-multipart>=0.0.6
 # HTTP Client for Golf API
 httpx>=0.25.0
 
-# Background Tasks
-apscheduler>=3.10.0
-
 # Environment Variables
 python-dotenv>=1.0.0
+
+# Timezone Support
+pytz>=2023.3
+
+# Note: apscheduler not installed yet (Phase 4)
 

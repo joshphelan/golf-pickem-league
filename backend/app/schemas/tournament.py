@@ -44,6 +44,7 @@ class TournamentBase(BaseModel):
     org_id: int = 1
     start_date: Optional[date] = None
     end_date: Optional[date] = None
+    timezone: str = 'America/New_York'
     status: str = 'upcoming'
 
 

@@ -16,6 +16,9 @@ from ..schemas.tournament import (
 )
 from ..services.golf_api_service import golf_api
 from ..utils.dependencies import get_current_user, require_owner
+from ..utils.date_parser import parse_api_dates
+from ..utils.tournament_status import determine_tournament_status
+from ..utils.score_converter import parse_golf_score
 
 router = APIRouter(prefix="/api/tournaments", tags=["Tournaments"])
 
@@ -134,15 +137,26 @@ async def import_tournament(
             detail="Invalid response from Golf API - missing tournament name"
         )
     
+    # Parse dates from API
+    start_date, end_date = parse_api_dates(api_data)
+    
+    # Auto-detect status based on dates
+    initial_status = api_data.get('status', 'upcoming')
+    tournament_status = determine_tournament_status(start_date, end_date, initial_status)
+    
+    # Extract timezone
+    timezone = api_data.get('timeZone', 'America/New_York')
+    
     # Create tournament record
     tournament = Tournament(
         tourn_id=request.tourn_id,
         name=tourn_name,
         year=request.year,
         org_id=api_data.get('orgId', 1),
-        start_date=None,  # Parse from date object if needed
-        end_date=None,
-        status=api_data.get('status', 'completed')
+        start_date=start_date,
+        end_date=end_date,
+        timezone=timezone,
+        status=tournament_status
     )
     db.add(tournament)
     db.flush()  # Get tournament.id
@@ -233,6 +247,133 @@ def complete_tournament(
     tournament.status = 'completed'
     db.commit()
     db.refresh(tournament)
+    
+    return tournament
+
+
+@router.post("/{tournament_id}/sync-scores", response_model=TournamentResponse)
+async def sync_tournament_scores(
+    tournament_id: UUID,
+    db: Session = Depends(get_db),
+    owner: User = Depends(require_owner)
+):
+    """
+    Sync scores from Golf API leaderboard.
+    Owner only.
+    
+    Fetches latest scores from /leaderboard endpoint and updates PlayerScore records.
+    Also updates tournament status based on dates.
+    """
+    # Get tournament
+    tournament = db.query(Tournament).filter(Tournament.id == tournament_id).first()
+    if not tournament:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Tournament not found"
+        )
+    
+    # Update status based on dates
+    new_status = determine_tournament_status(
+        tournament.start_date,
+        tournament.end_date,
+        tournament.status
+    )
+    if new_status != tournament.status:
+        tournament.status = new_status
+        db.commit()
+    
+    # Fetch leaderboard from API
+    try:
+        leaderboard_data = await golf_api.get_leaderboard(
+            tournament.tourn_id,
+            tournament.year,
+            tournament.org_id
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch leaderboard from Golf API: {str(e)}"
+        )
+    
+    # Extract leaderboard rows
+    leaderboard_rows = leaderboard_data.get('leaderboardRows', [])
+    if not leaderboard_rows:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No leaderboard data available for this tournament"
+        )
+    
+    # Get current round from API
+    current_round = leaderboard_data.get('roundId', 4)
+    if isinstance(current_round, dict):
+        current_round = int(current_round.get('$numberInt', 4))
+    
+    scores_updated = 0
+    scores_created = 0
+    
+    # Process each player's score
+    for row in leaderboard_rows:
+        player_id_api = str(row.get('playerId'))
+        if not player_id_api:
+            continue
+        
+        # Find player in database
+        player = db.query(Player).filter(Player.player_id == player_id_api).first()
+        if not player:
+            # Player not in our database yet (not imported with tournament)
+            continue
+        
+        # Parse score
+        total_score_str = row.get('total', 'E')
+        total_score = parse_golf_score(total_score_str)
+        
+        if total_score is None:
+            # Invalid score (WD, CUT, etc.)
+            continue
+        
+        # Parse position
+        position_str = row.get('position', '')
+        try:
+            # Remove "T" prefix if present (T3 -> 3)
+            position = int(position_str.replace('T', ''))
+        except (ValueError, AttributeError):
+            position = None
+        
+        # Check if player made cut
+        player_status = row.get('status', '')
+        made_cut = player_status not in ['CUT', 'WD', 'WITHDRAWN']
+        
+        # Check if score already exists for this round
+        existing_score = db.query(PlayerScore).filter(
+            PlayerScore.tournament_id == tournament.id,
+            PlayerScore.player_id == player.id,
+            PlayerScore.round == current_round
+        ).first()
+        
+        if existing_score:
+            # Update existing score
+            existing_score.total_score = total_score
+            existing_score.position = position
+            existing_score.made_cut = made_cut
+            scores_updated += 1
+        else:
+            # Create new score record
+            new_score = PlayerScore(
+                tournament_id=tournament.id,
+                player_id=player.id,
+                round=current_round,
+                total_score=total_score,
+                position=position,
+                made_cut=made_cut
+            )
+            db.add(new_score)
+            scores_created += 1
+    
+    db.commit()
+    db.refresh(tournament)
+    
+    # Log sync result
+    print(f"Synced scores for tournament {tournament.name}: {scores_created} created, {scores_updated} updated")
     
     return tournament
 

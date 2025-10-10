@@ -84,25 +84,27 @@ golf-pickem-league/
   IMPLEMENTATION_PLAN.md
 ```
 
-## API Integration - Free Golf API
+## API Integration - Live Golf Data API (RapidAPI)
 
-### Available Endpoints
-- `GET /world-ranking` - World rankings for year
-- `GET /fedexcup-ranking` - FedExCup rankings (live during tournaments)
-- `GET /organizations` - Supported organizations
-- `GET /schedules` - Tournament schedules by year/org
-- `GET /players` - Search players by name/ID
-- `GET /tournaments` - Tournament metadata, players, courses, earnings
-- `GET /leaderboards` - Live leaderboard data
-- `GET /scorecards` - Detailed shot-by-shot scorecards
-- `GET /points` - FedExCup points per player
-- `GET /earnings` - Player earnings per tournament
+### Available Endpoints (Tested & Working)
+- `GET /schedule?year=YYYY` - Tournament schedules by year (orgId=1 for PGA)
+- `GET /tournament?tournId=XXX&year=YYYY` - Tournament details + player field (NO scores)
+- `GET /leaderboard?orgId=1&tournId=XXX&year=YYYY` - Player scores + leaderboard
+
+### Key Implementation Details
+- **Base URL**: `https://live-golf-data.p.rapidapi.com`
+- **Headers**: `X-RapidAPI-Key` and `X-RapidAPI-Host: live-golf-data.p.rapidapi.com`
+- **orgId**: Always use `1` for PGA Tour
+- **tournId**: String format (e.g., "016", "475")
+- **Scores**: ONLY available in `/leaderboard` endpoint, NOT in `/tournament`
+- **Score format**: Strings like "-12", "+3", "E" (parse for calculations)
 
 ### Data Sync Strategy
-1. Import 2-3 completed tournaments for testing/demo
-2. Use APScheduler to fetch live scores every 2-5 minutes during active tournaments
-3. Store in `player_scores` table with round-by-round breakdown
-4. Frontend polls backend every 30-60 seconds
+1. Import tournaments via `/schedule` and `/tournament` endpoints
+2. Sync scores from `/leaderboard` endpoint (contains `leaderboardRows` array)
+3. Parse player `total` field for fantasy scoring
+4. Use APScheduler (Phase 3) to auto-sync during active tournaments
+5. Frontend polls backend every 30-60 seconds
 
 ## Scoring System
 - **Team Size**: 4 golfers per team (configurable via `league_settings`)
@@ -147,9 +149,11 @@ docker-compose up
 ```
 
 ## Important Notes
-- API key stored in `.env` as `GOLF_API_KEY`
-- First user must be manually set as admin in database
+- API key stored in `.env` as `GOLF_API_KEY` (RapidAPI key)
+- API base URL in `.env` as `GOLF_API_BASE_URL=https://live-golf-data.p.rapidapi.com`
+- First user auto-assigned as primary owner (cannot be removed)
 - League invite codes are 8-character alphanumeric
 - Draft deadline enforced in backend (no changes after)
 - Player can only be drafted once per league (not globally)
+- Scores fetched from `/leaderboard` endpoint only (orgId=1 required)
 

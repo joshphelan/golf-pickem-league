@@ -20,6 +20,7 @@ class Tournament(Base):
     
     start_date = Column(Date)
     end_date = Column(Date)
+    timezone = Column(String, default='America/New_York')  # IANA timezone string
     status = Column(String, default='upcoming')  # 'upcoming', 'active', 'completed'
     
     # Timestamps

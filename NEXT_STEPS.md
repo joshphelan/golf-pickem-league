@@ -1,7 +1,7 @@
 # Next Steps - Golf Fantasy League
 
-> Last Updated: October 7, 2025
-> Current Phase: Phase 2 - Golf API Integration
+> Last Updated: October 10, 2025
+> Current Phase: Phase 3.5 Complete → Ready for Phase 4 (Frontend)
 
 ## Progress
 
@@ -9,21 +9,80 @@
 
 **Completed:**
 - Backend project structure
-- PostgreSQL database with all tables
-- JWT authentication system
+- PostgreSQL database with all tables (includes Tournament, Player, League, Team models)
+- JWT authentication system with bcrypt password hashing
 - Three-tier permission system (user/league_admin/owner/primary_owner)
-- User management API endpoints
-- Primary owner auto-detection
-- API tested and working at http://localhost:8000
+- User management API endpoints (signup, login, admin controls)
+- Primary owner auto-detection (hybrid: first user + email check)
+- API tested and working at http://localhost:8000/docs
 
-### Phase 2: Golf API & League Management - IN PROGRESS
+### Phase 2: Golf API & League Management - COMPLETE
 
-**Next Tasks:**
-1. Implement Golf API service integration
-2. Create tournament sync endpoints
-3. Import historical tournament data for testing
-4. Build league creation/management endpoints
-5. Implement team roster and player draft system
+**Completed:**
+- Golf API service integration (Live Golf Data via RapidAPI)
+- API endpoints discovered and tested: `/schedule`, `/tournament`, `/leaderboard`
+- Tournament import endpoint (`POST /api/tournaments/import`)
+- Tournament list endpoint (`GET /api/tournaments`)
+- League CRUD endpoints (create, list, join via invite code)
+- Team roster management (create team, add/remove players)
+- Player draft system with league-wide uniqueness check
+- API Reference documentation (`backend/API_REFERENCE.md`)
+
+**Key Findings:**
+- Scores are ONLY available via `/leaderboard` endpoint (requires orgId=1)
+- `/tournament` endpoint provides player field but NO scores
+- Score format: string like "-12", "+3", "E" (needs conversion for calculations)
+- tournId format: strings like "016", "475" (not integers)
+
+### Phase 3: Scoring & Sync - COMPLETE
+
+**Completed:**
+- Score conversion utility (handles API string format like "-12", "E")
+- Date parsing utility (parses MongoDB date format from API)
+- Tournament status auto-detection based on dates
+- Added `timezone` column to tournaments
+- Tournament score sync endpoint (`POST /api/tournaments/{id}/sync-scores`)
+- Scoring calculation service (calculate team totals, league standings)
+- League standings endpoint (`GET /api/leagues/{id}/standings`)
+- Scheduler configuration (disabled by default, 15-min interval)
+
+**Key Features:**
+- Manual score syncing via API endpoint (owner-only)
+- Automatic status updates (upcoming/active/completed) based on dates
+- Team scoring: sum of all player scores (lower wins)
+- League standings with player breakdown
+
+### Phase 3.5: Backend Testing - COMPLETE ✅
+
+**Successfully Tested:**
+- All 27 API endpoints working correctly
+- Full authentication flow (signup, login, JWT, permissions)
+- Tournament import with player field parsing
+- Score syncing from `/leaderboard` endpoint
+- League creation with auto-team generation
+- Player drafting with validation (draft deadline, team size, uniqueness)
+- Team scoring calculations (sum of player scores)
+- League standings with player breakdown
+
+**Test Results:**
+- ✅ API calls: 2 total (import tournament + sync scores)
+- ✅ End-to-end flow: Signup → Import → Create League → Draft → View Standings
+- ✅ No errors in production test with historical data (Valspar 2024)
+- ✅ Testing guide validated and corrected
+
+### Phase 4: Frontend - NEXT
+
+**Remaining Tasks:**
+1. Next.js setup with Tailwind CSS
+2. Login/Signup pages
+3. Tournament list & details
+4. League dashboard with live standings
+5. Team management & player draft interface
+6. Manual "Sync Scores" button (owner only)
+7. Responsive design
+8. Deploy to Vercel
+
+**Estimated Time:** 2-3 weeks
 
 ## Quick Reference
 
@@ -85,10 +144,11 @@ More endpoints will be added in Phase 2.
 ## Environment Variables
 
 Required in `.env`:
-- `GOLF_API_KEY` - Your API key from Free Golf API
-- `SECRET_KEY` - Generated hex string for JWT signing
+- `GOLF_API_KEY` - Your RapidAPI key for Live Golf Data API
+- `GOLF_API_BASE_URL` - Set to `https://live-golf-data.p.rapidapi.com`
+- `SECRET_KEY` - Generated hex string for JWT signing (use `secrets.token_hex(32)`)
 - `DATABASE_URL` - PostgreSQL connection string
-- `NEXT_PUBLIC_API_URL` - Backend URL for frontend
+- `NEXT_PUBLIC_API_URL` - Backend URL for frontend (http://localhost:8000)
 
 ## Troubleshooting
 

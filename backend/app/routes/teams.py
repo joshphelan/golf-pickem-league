@@ -17,6 +17,7 @@ from ..schemas.league import (
 )
 from ..schemas.tournament import PlayerResponse
 from ..utils.dependencies import get_current_user
+from ..services.scoring_service import calculate_team_score
 
 router = APIRouter(prefix="/api/teams", tags=["Teams"])
 
@@ -52,9 +53,12 @@ def get_team(
     # Get team players
     team_players = db.query(TeamPlayer).filter(TeamPlayer.team_id == team_id).all()
     
+    # Calculate team score (final round by default)
+    total_score = calculate_team_score(team_id, db, round_num=4)
+    
     team_dict = TeamDetailResponse.model_validate(team).model_dump()
     team_dict['players'] = team_players
-    team_dict['total_score'] = None  # TODO: Calculate from player_scores
+    team_dict['total_score'] = total_score
     
     return team_dict
 

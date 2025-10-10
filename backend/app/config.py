@@ -25,6 +25,10 @@ class Settings(BaseSettings):
     # Primary Owner (optional - first user is auto-primary owner)
     PRIMARY_OWNER_EMAIL: Optional[str] = None
     
+    # Scheduler Settings
+    ENABLE_AUTO_SYNC: bool = False  # Enable automatic score syncing (default: disabled for dev)
+    SYNC_INTERVAL_MINUTES: int = 15  # How often to sync scores (when enabled)
+    
     class Config:
         # Look for .env in project root (parent of backend folder)
         env_file = Path(__file__).resolve().parent.parent.parent / ".env"
