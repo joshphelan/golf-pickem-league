@@ -129,7 +129,7 @@ def calculate_league_standings(
             
             player_scores.append({
                 'player_id': str(player.id),
-                'player_name': player.full_name,
+                'name': player.full_name,  # Frontend expects 'name'
                 'score': score.total_score if score else None,
                 'position': score.position if score else None,
                 'made_cut': score.made_cut if score else True
@@ -138,8 +138,7 @@ def calculate_league_standings(
         standings.append({
             'team_id': str(team.id),
             'team_name': team.team_name,
-            'user_id': str(team.user_id),
-            'user': team.user.username if team.user else None,
+            'owner_name': team.user.username if team.user else 'Unknown',  # Frontend expects 'owner_name'
             'total_score': team_score,
             'players': player_scores
         })

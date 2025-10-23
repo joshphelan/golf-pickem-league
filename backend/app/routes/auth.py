@@ -52,10 +52,10 @@ def signup(user_data: UserCreate, db: Session = Depends(get_db)):
         email=user_data.email,
         username=user_data.username,
         hashed_password=hash_password(user_data.password),
-        is_approved=is_primary_owner,  # Auto-approve primary owner
-        is_league_admin=is_primary_owner,
-        is_owner=is_primary_owner,
-        is_primary_owner=is_primary_owner
+        is_approved=True,  # All users can log in (approval no longer required)
+        is_league_admin=is_primary_owner,  # Only first user gets league admin
+        is_owner=is_primary_owner,  # Only first user gets owner
+        is_primary_owner=is_primary_owner  # Only first user is primary owner
     )
     
     db.add(new_user)
@@ -63,15 +63,16 @@ def signup(user_data: UserCreate, db: Session = Depends(get_db)):
     db.refresh(new_user)
     
     if is_primary_owner:
-        message = "Account created successfully. You are the primary owner!"
+        message = "Account created successfully. You are the primary owner with full admin access!"
     else:
-        message = "Account created successfully. Please wait for owner approval."
+        message = "Account created successfully. You can log in and join leagues. To create leagues, request admin access from an owner."
     
     return {
         "message": message,
         "user_id": str(new_user.id),
         "email": new_user.email,
-        "is_primary_owner": is_primary_owner
+        "is_primary_owner": is_primary_owner,
+        "is_league_admin": is_primary_owner
     }
 
 
@@ -96,12 +97,8 @@ def login(credentials: UserLogin, db: Session = Depends(get_db)):
             detail="Incorrect email or password"
         )
     
-    # Check if user is approved
-    if not user.is_approved:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Account pending admin approval"
-        )
+    # Note: Removed is_approved check - users can log in without approval
+    # They just can't create leagues until they have is_league_admin = True
     
     # Create access token with permission fields
     access_token = create_access_token(
@@ -215,13 +212,10 @@ def grant_league_admin(
             detail="User not found"
         )
     
-    if not user.is_approved:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User must be approved first"
-        )
-    
+    # Remove approval check - no longer needed
+    # Granting permissions implicitly approves the user
     user.is_league_admin = True
+    user.is_approved = True  # Ensure user is approved when granted permissions
     db.commit()
     db.refresh(user)
     
@@ -280,15 +274,11 @@ def grant_owner_status(
             detail="User not found"
         )
     
-    if not user.is_approved:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User must be approved first"
-        )
-    
+    # Remove approval check - no longer needed
+    # Granting permissions implicitly approves the user
     user.is_owner = True
     user.is_league_admin = True  # Owners are automatically league admins
-    user.is_approved = True
+    user.is_approved = True  # Ensure user is approved when granted permissions
     db.commit()
     db.refresh(user)
     

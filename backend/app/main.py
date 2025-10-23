@@ -6,6 +6,7 @@ from .routes import auth_router
 from .routes.tournaments import router as tournaments_router
 from .routes.leagues import router as leagues_router
 from .routes.teams import router as teams_router
+from .scheduler import start_scheduler
 
 # Create FastAPI app
 app = FastAPI(
@@ -46,4 +47,11 @@ def root():
 def health_check():
     """Health check endpoint for monitoring."""
     return {"status": "healthy"}
+
+
+# Start scheduler on app startup
+@app.on_event("startup")
+async def startup_event():
+    """Start background scheduler on app startup."""
+    start_scheduler()
 

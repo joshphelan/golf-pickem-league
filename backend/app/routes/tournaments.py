@@ -6,6 +6,7 @@ from uuid import UUID
 
 from ..database import get_db
 from ..models.tournament import Tournament, Player, TournamentPlayer, PlayerScore
+from ..models.league import Team
 from ..models.user import User
 from ..schemas.tournament import (
     TournamentResponse,
@@ -60,6 +61,72 @@ def get_tournament(
     )
     
     return tournament
+
+
+@router.get("/{tournament_id}/available-players")
+async def get_available_players(
+    tournament_id: UUID,
+    league_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get list of players available to draft in a league for this tournament.
+    
+    Returns players who:
+    - Are registered for the tournament
+    - Have not been drafted in this league yet
+    """
+    from ..models.tournament import Player, TournamentPlayer
+    from ..models.league import League, TeamPlayer
+    
+    # Verify tournament exists
+    tournament = db.query(Tournament).filter(Tournament.id == tournament_id).first()
+    if not tournament:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Tournament not found"
+        )
+    
+    # Verify league exists
+    league = db.query(League).filter(League.id == league_id).first()
+    if not league:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="League not found"
+        )
+    
+    # Get all players in this tournament
+    tournament_players = (
+        db.query(TournamentPlayer)
+        .filter(TournamentPlayer.tournament_id == tournament_id)
+        .all()
+    )
+    
+    # Get IDs of players already drafted in this league
+    drafted_player_ids = (
+        db.query(TeamPlayer.player_id)
+        .join(Team)
+        .filter(Team.league_id == league_id)
+        .all()
+    )
+    drafted_ids = [str(p[0]) for p in drafted_player_ids]
+    
+    # Filter out drafted players
+    available = []
+    for tp in tournament_players:
+        if str(tp.player_id) not in drafted_ids:
+            player = tp.player
+            available.append({
+                'id': str(player.id),
+                'player_id': player.player_id,
+                'first_name': player.first_name,
+                'last_name': player.last_name,
+                'full_name': player.full_name,
+                'is_amateur': False  # Can add this field to Player model if needed
+            })
+    
+    return available
 
 
 @router.get("/{tournament_id}/leaderboard", response_model=LeaderboardResponse)
@@ -376,4 +443,186 @@ async def sync_tournament_scores(
     print(f"Synced scores for tournament {tournament.name}: {scores_created} created, {scores_updated} updated")
     
     return tournament
+
+
+@router.get("/schedule", response_model=List[TournamentResponse])
+async def get_tournament_schedule(
+    year: int = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get tournament schedule with 24-hour caching.
+    Returns tournaments from DB if refreshed within 24 hours, otherwise fetches from Golf API.
+    """
+    from datetime import datetime, timedelta
+    
+    # Default to current year and next year if not specified
+    if year is None:
+        current_year = datetime.now().year
+        years = [current_year, current_year + 1]
+    else:
+        years = [year]
+    
+    tournaments_to_return = []
+    
+    for year_val in years:
+        # Check if we have tournaments for this year and when they were last refreshed
+        existing_tournaments = db.query(Tournament).filter(Tournament.year == year_val).all()
+        
+        # Check if any tournament was refreshed in the last 24 hours
+        should_refresh = True
+        if existing_tournaments:
+            latest_refresh = max(
+                (t.last_schedule_refresh or datetime.min.replace(tzinfo=None) for t in existing_tournaments),
+                default=datetime.min.replace(tzinfo=None)
+            )
+            if latest_refresh > datetime.now() - timedelta(hours=24):
+                should_refresh = False
+        
+        if should_refresh:
+            # Fetch from Golf API
+            try:
+                schedule_data = await golf_api.get_schedules(year_val)
+                
+                for tournament_data in schedule_data:
+                    tourn_id = str(tournament_data.get('tournId', ''))
+                    if not tourn_id:
+                        continue
+                    
+                    # Check if tournament already exists
+                    existing = db.query(Tournament).filter(
+                        Tournament.tourn_id == tourn_id,
+                        Tournament.year == year_val
+                    ).first()
+                    
+                    if existing:
+                        # Update existing tournament metadata
+                        existing.name = tournament_data.get('name', existing.name)
+                        existing.start_date = parse_api_dates(tournament_data)[0] or existing.start_date
+                        existing.end_date = parse_api_dates(tournament_data)[1] or existing.end_date
+                        existing.last_schedule_refresh = datetime.now()
+                    else:
+                        # Create new tournament metadata (no players yet)
+                        start_date, end_date = parse_api_dates(tournament_data)
+                        tournament_status = determine_tournament_status(start_date, end_date)
+                        
+                        new_tournament = Tournament(
+                            tourn_id=tourn_id,
+                            name=tournament_data.get('name', f'Tournament {tourn_id}'),
+                            year=year_val,
+                            start_date=start_date,
+                            end_date=end_date,
+                            status=tournament_status,
+                            last_schedule_refresh=datetime.now()
+                        )
+                        db.add(new_tournament)
+                
+                db.commit()
+                
+            except Exception as e:
+                print(f"Error fetching schedule for year {year_val}: {e}")
+                # Return existing tournaments if API call fails
+                tournaments_to_return.extend(existing_tournaments)
+                continue
+        
+        # Get tournaments for this year (either from cache or just updated)
+        year_tournaments = db.query(Tournament).filter(Tournament.year == year_val).all()
+        tournaments_to_return.extend(year_tournaments)
+    
+    return tournaments_to_return
+
+
+@router.post("/{tournament_id}/refresh-players")
+async def refresh_tournament_players(
+    tournament_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Refresh player field for a tournament.
+    For upcoming tournaments: calls /tournament endpoint
+    For active/completed tournaments: calls /leaderboard endpoint
+    """
+    from datetime import datetime
+    
+    tournament = db.query(Tournament).filter(Tournament.id == tournament_id).first()
+    if not tournament:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Tournament not found"
+        )
+    
+    try:
+        if tournament.status == 'upcoming':
+            # Use /tournament endpoint for player field
+            api_data = await golf_api.get_tournament(tournament.tourn_id, tournament.year)
+            players_data = api_data.get('players', [])
+            
+            # Process and upsert players
+            players_processed = 0
+            for player_data in players_data:
+                player_id_api = str(player_data.get('playerId', ''))
+                if not player_id_api:
+                    continue
+                
+                first_name = player_data.get('firstName', '')
+                last_name = player_data.get('lastName', '')
+                full_name = f"{first_name} {last_name}".strip()
+                
+                if not full_name:
+                    continue
+                
+                # Get or create player
+                player = db.query(Player).filter(Player.player_id == player_id_api).first()
+                if not player:
+                    player = Player(
+                        player_id=player_id_api,
+                        first_name=first_name,
+                        last_name=last_name,
+                        full_name=full_name
+                    )
+                    db.add(player)
+                    db.flush()  # Get player.id
+                
+                # Upsert tournament player relationship
+                tournament_player = db.query(TournamentPlayer).filter(
+                    TournamentPlayer.tournament_id == tournament.id,
+                    TournamentPlayer.player_id == player.id
+                ).first()
+                
+                if not tournament_player:
+                    tournament_player = TournamentPlayer(
+                        tournament_id=tournament.id,
+                        player_id=player.id
+                    )
+                    db.add(tournament_player)
+                    players_processed += 1
+            
+            db.commit()
+            tournament.last_player_refresh = datetime.now()
+            db.commit()
+            
+            return {
+                "message": f"Refreshed {players_processed} players for {tournament.name}",
+                "players_added": players_processed
+            }
+            
+        else:
+            # Tournament is active or completed - use leaderboard
+            leaderboard_data = await golf_api.get_leaderboard(
+                tournament.tourn_id, 
+                tournament.year
+            )
+            leaderboard_rows = leaderboard_data.get('leaderboardRows', [])
+            
+            # This will update both players and scores
+            # Reuse the existing sync logic
+            return await sync_tournament_scores(tournament_id, db, current_user)
+            
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to refresh players: {str(e)}"
+        )
 

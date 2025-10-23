@@ -26,6 +26,8 @@ class Tournament(Base):
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    last_schedule_refresh = Column(DateTime(timezone=True), nullable=True)
+    last_player_refresh = Column(DateTime(timezone=True), nullable=True)
     
     # Relationships
     leagues = relationship("League", back_populates="tournament", cascade="all, delete-orphan")

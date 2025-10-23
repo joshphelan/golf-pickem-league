@@ -1,70 +1,139 @@
 # Golf Fantasy League
 
-Fantasy golf web application where users join private leagues, draft PGA Tour golfers, and compete based on real tournament scores.
+A full-stack fantasy golf application where users create private leagues, draft PGA Tour golfers, and compete based on real tournament scores.
 
-## Tech Stack
+## 🏗️ Architecture
 
 - **Frontend**: Next.js 14 + TypeScript + Tailwind CSS
-- **Backend**: FastAPI + Python 3.11+
-- **Database**: PostgreSQL
-- **API**: Free Golf API (https://freewebapi.com/sports-apis/golf-api/)
+- **Backend**: FastAPI + Python 3.11+ + PostgreSQL
+- **API**: Live Golf Data (RapidAPI)
+- **Deployment**: Vercel (frontend) + DigitalOcean (backend)
 
-## Quick Start
+## 🚀 Quick Start
 
 ### Prerequisites
+- Node.js 18+ and npm
 - Python 3.11+
-- Node.js 18+
-- Docker Desktop
-- Free Golf API key
+- PostgreSQL (via Docker)
 
-### Setup
+### Backend Setup
+```bash
+cd backend
+python -m venv venv
+# Windows:
+venv\Scripts\activate
+# macOS/Linux:
+source venv/bin/activate
 
-1. **Clone and configure**
-   ```bash
-   git clone <repo-url>
-   cd golf-pickem-league
-   cp .env.example .env
-   # Add your GOLF_API_KEY and generate SECRET_KEY
-   ```
+pip install -r requirements.txt
+```
 
-2. **Start backend**
-   ```bash
-   docker-compose up -d postgres
-   cd backend
-   python -m venv venv
-   venv\Scripts\activate  # Windows
-   # source venv/bin/activate  # Mac/Linux
-   pip install -r requirements.txt
-   alembic upgrade head
-   uvicorn app.main:app --reload
-   ```
+### Environment Setup
+Create `.env` in project root:
+```env
+DATABASE_URL=postgresql://postgres:password@localhost:5432/golf_fantasy
+SECRET_KEY=your-secret-key-here
+GOLF_API_KEY=your-rapidapi-key
+GOLF_API_BASE_URL=https://live-golf-data.p.rapidapi.com
+ENABLE_AUTO_SYNC=true
+```
 
-3. **API available at**
-   - http://localhost:8000
-   - http://localhost:8000/docs
+### Database Setup
+```bash
+# Start PostgreSQL
+docker-compose up postgres -d
 
-## Current Status
+# Run migrations
+cd backend
+alembic upgrade head
+```
 
-**Phase 1 Complete**: Backend foundation with authentication and user management
+### Start Backend
+```bash
+cd backend
+uvicorn app.main:app --reload
+```
 
-**Next**: Phase 2 - Golf API integration and league management
+### Frontend Setup
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-See `NEXT_STEPS.md` for detailed progress and `IMPLEMENTATION_PLAN.md` for full roadmap.
+## 🎯 Current Status: Phase 4 Complete
 
-## Development
+### ✅ Completed Features
+- **Authentication System**: 3-tier permissions (User/Admin/Owner)
+- **Tournament Management**: Import, schedule caching, player refresh
+- **League System**: Create, join via invite codes, standings
+- **Team Drafting**: 4-player teams with real-time scoring
+- **Admin Portal**: User management, tournament import
+- **Background Scheduler**: Auto-refresh players for upcoming tournaments
+- **Production-Ready**: Environment configs, error handling, validation
 
-- Backend runs on port 8000
-- Frontend will run on port 3000
-- PostgreSQL on port 5432
-- First user to sign up becomes primary owner automatically
+### 🔧 Recent Fixes Applied
+- Fixed async/sync conflicts in scheduler
+- Removed auto-refresh from league creation (performance)
+- Added manual "Refresh Players" button
+- Fixed team ownership field naming
+- Added tournament schedule dropdown
+- Improved date/time picker UX
 
-## Documentation
+## 📁 Project Structure
 
-- `.cursorrules` - AI coding guidelines
-- `IMPLEMENTATION_PLAN.md` - Full 3-week implementation plan
-- `NEXT_STEPS.md` - Current progress and immediate tasks
-- `backend/README.md` - Backend-specific setup
+```
+golf-pickem-league/
+├── backend/                 # FastAPI backend
+│   ├── app/
+│   │   ├── models/         # SQLAlchemy models
+│   │   ├── routes/         # API endpoints
+│   │   ├── services/      # Golf API integration
+│   │   ├── schemas/       # Pydantic models
+│   │   └── utils/         # Auth, dependencies
+│   ├── alembic/           # Database migrations
+│   └── requirements.txt
+├── frontend/               # Next.js frontend
+│   ├── app/               # App router pages
+│   ├── components/        # React components
+│   └── lib/               # API client, auth
+├── docker-compose.yml      # PostgreSQL setup
+└── .env                   # Environment variables
+```
 
-## License
+## 🧪 Testing
 
-MIT
+### Backend Testing
+```bash
+cd backend
+# Test API endpoints
+curl http://localhost:8000/docs
+```
+
+### Frontend Testing
+See `FRONTEND_TESTING.md` for comprehensive testing guide.
+
+## 🚀 Production Deployment
+
+See `PRODUCTION_CHECKLIST.md` for deployment steps.
+
+## 📚 Documentation
+
+- `IMPLEMENTATION_PLAN.md` - Original development plan
+- `FRONTEND_TESTING.md` - Frontend testing guide
+- `PRODUCTION_CHECKLIST.md` - Production deployment
+- `KNOWN_ISSUES.md` - Current known issues
+
+## 🔄 Next Session Resume
+
+See `RESUME_GUIDE.md` for how to pick up development.
+
+## 🐛 Known Issues
+
+- 422 error on tournament schedule endpoint (authentication issue)
+- Need to verify JWT token handling in frontend
+- Tournament import requires manual API key setup
+
+## 📞 Support
+
+Check the documentation files for detailed setup and troubleshooting guides.

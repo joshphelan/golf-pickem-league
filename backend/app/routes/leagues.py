@@ -1,7 +1,7 @@
 """League management endpoints."""
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from uuid import UUID
 import secrets
 import string
@@ -47,6 +47,9 @@ def create_league(
             detail="Tournament not found"
         )
     
+    # REMOVED: Auto-refresh players block
+    # Users can click "Refresh Players" button instead
+    # Scheduler handles automatic refresh for upcoming tournaments
     # Can't create league for completed tournaments
     # NOTE: Temporarily disabled for testing with historical data
     # if tournament.status == 'completed':
@@ -92,17 +95,21 @@ def create_league(
     return league_dict
 
 
-@router.get("", response_model=List[LeagueDetailResponse])
-def list_my_leagues(
+@router.get("/my-leagues", response_model=List[LeagueDetailResponse])
+def get_my_leagues(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """
     List all leagues the current user is a member of.
+    Note: This must come BEFORE /{league_id} route to avoid path conflicts.
     """
     # Get leagues where user has a team
     teams = db.query(Team).filter(Team.user_id == current_user.id).all()
     league_ids = [team.league_id for team in teams]
+    
+    if not league_ids:
+        return []
     
     leagues = db.query(League).filter(League.id.in_(league_ids)).all()
     
@@ -155,16 +162,17 @@ def get_league(
     return league_dict
 
 
-@router.post("/join/{invite_code}", response_model=LeagueDetailResponse)
+@router.post("/join/{invite_code}")
 def join_league(
     invite_code: str,
-    team_name: str,
+    team_name: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """
     Join a league via invite code.
     Creates a team for the user in the league.
+    If no team_name provided, auto-generates one.
     """
     # Find league by invite code
     league = db.query(League).filter(League.invite_code == invite_code.upper()).first()
@@ -194,6 +202,10 @@ def join_league(
             detail="League is full"
         )
     
+    # Auto-generate team name if not provided
+    if not team_name:
+        team_name = f"{current_user.username}'s Team"
+    
     # Create team
     team = Team(
         league_id=league.id,
@@ -209,7 +221,15 @@ def join_league(
     league_dict['tournament'] = league.tournament
     league_dict['member_count'] = member_count
     
-    return league_dict
+    team_dict = {
+        'id': str(team.id),
+        'league_id': str(team.league_id),
+        'user_id': str(team.user_id),
+        'team_name': team.team_name,
+        'created_at': team.created_at.isoformat()
+    }
+    
+    return {'league': league_dict, 'team': team_dict}
 
 
 @router.get("/{league_id}/members", response_model=List[dict])
