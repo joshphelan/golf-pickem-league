@@ -61,24 +61,35 @@ npm install
 npm run dev
 ```
 
-## 🎯 Current Status: Phase 4 Complete
+## 🎯 Current Status: Core Functionality Complete (95%)
+
+**Last Updated**: October 31, 2024
 
 ### ✅ Completed Features
 - **Authentication System**: 3-tier permissions (User/Admin/Owner)
-- **Tournament Management**: Import, schedule caching, player refresh
+- **Tournament Management**: Automated import scripts, score syncing
 - **League System**: Create, join via invite codes, standings
-- **Team Drafting**: 4-player teams with real-time scoring
-- **Admin Portal**: User management, tournament import
-- **Background Scheduler**: Auto-refresh players for upcoming tournaments
-- **Production-Ready**: Environment configs, error handling, validation
+- **Team Drafting**: 4-player teams with proper UUID handling
+- **Player Display**: Names, round scores (R1-R4), total scores
+- **Draft Enforcement**: Team limit properly enforced, buttons disabled when full
+- **Score Integration**: Backend fetches and displays player scores from completed tournaments
+- **Admin Portal**: User management (tournament import UI removed - will be automated)
+- **SSR Safety**: All localStorage access properly guarded
 
-### 🔧 Recent Fixes Applied
-- Fixed async/sync conflicts in scheduler
-- Removed auto-refresh from league creation (performance)
-- Added manual "Refresh Players" button
-- Fixed team ownership field naming
-- Added tournament schedule dropdown
-- Improved date/time picker UX
+### 🔧 October 31 Session Fixes
+- ✅ Fixed UUID validation errors in draft/undraft
+- ✅ Fixed player names not displaying (nested structure issue)
+- ✅ Fixed round scores not showing (added to API response)
+- ✅ Fixed remove player button (correct UUID passing)
+- ✅ Fixed draft limit enforcement (buttons disabled at 4 players)
+- ✅ Fixed SSR localStorage errors (typeof window checks)
+- ✅ Created score sync script for completed tournaments
+- ✅ Removed tournament import UI (will be automated)
+
+### 🚨 Known Limitation
+**Golf API Player Data Timing**: The Live Golf Data API doesn't populate player fields until ~1 week before tournament start. Currently imported tournaments >1 week away have 0 players. Use past tournaments (Jan-Feb 2025) for testing.
+
+**See**: `KNOWN_ISSUES.md` and `RESUME_GUIDE.md` for details.
 
 ## 📁 Project Structure
 
@@ -91,6 +102,9 @@ golf-pickem-league/
 │   │   ├── services/      # Golf API integration
 │   │   ├── schemas/       # Pydantic models
 │   │   └── utils/         # Auth, dependencies
+│   ├── scripts/           # Utility scripts
+│   │   ├── import_2025_tournaments.py
+│   │   └── sync_completed_scores.py
 │   ├── alembic/           # Database migrations
 │   └── requirements.txt
 ├── frontend/               # Next.js frontend
@@ -100,6 +114,22 @@ golf-pickem-league/
 ├── docker-compose.yml      # PostgreSQL setup
 └── .env                   # Environment variables
 ```
+
+## 🔧 Utility Scripts
+
+### Import Tournaments
+```bash
+cd backend
+python scripts/import_2025_tournaments.py
+```
+Imports first 5 and last 5 tournaments from 2025 PGA Tour schedule.
+
+### Sync Scores
+```bash
+cd backend
+python scripts/sync_completed_scores.py
+```
+Syncs round-by-round scores for all completed tournaments from the Golf API.
 
 ## 🧪 Testing
 
@@ -130,9 +160,18 @@ See `RESUME_GUIDE.md` for how to pick up development.
 
 ## 🐛 Known Issues
 
-- 422 error on tournament schedule endpoint (authentication issue)
+- 422 error on tournament schedule endpoint (authentication issue) - **Currently being tested**
 - Need to verify JWT token handling in frontend
 - Tournament import requires manual API key setup
+
+## 🧪 Testing In Progress
+
+**Servers Running**:
+- Backend: http://localhost:8000
+- Frontend: http://localhost:3000
+- Database: PostgreSQL (Docker)
+
+**Testing Plan**: See `MANUAL_TEST_PLAN.md` and `TESTING_STATUS.md`
 
 ## 📞 Support
 

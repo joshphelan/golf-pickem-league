@@ -37,20 +37,12 @@ export default function Navbar() {
                 Dashboard
               </Link>
               {user.is_owner && (
-                <>
-                  <Link
-                    href="/admin/users"
-                    className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
-                  >
-                    Owner Portal
-                  </Link>
-                  <Link
-                    href="/admin/import"
-                    className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
-                  >
-                    Import Tournament
-                  </Link>
-                </>
+                <Link
+                  href="/admin/users"
+                  className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
+                >
+                  Owner Portal
+                </Link>
               )}
             </div>
           </div>

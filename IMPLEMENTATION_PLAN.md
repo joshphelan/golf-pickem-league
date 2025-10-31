@@ -1,8 +1,8 @@
 # Golf Fantasy League - Implementation Plan
 
-> Last Updated: January 22, 2025
+> Last Updated: October 31, 2025
 > API: Live Golf Data (RapidAPI)
-> Status: Phase 4 Complete - Production Ready
+> Status: Core Complete (95%) - Production Deployment Pending
 
 ## Overview
 
@@ -17,6 +17,7 @@ Build a fantasy golf web application where users join private leagues, draft PGA
 2. **Polling for Updates** - Backend polls API every 2-5min, frontend polls backend every 30-60s
 3. **Private Leagues Only** - Shareable invite codes, admin approval required
 4. **Stroke-Based Scoring** - Team score = sum of 4 golfers' stroke scores (lower wins)
+5. **⚠️ API Limitation Discovered**: Live Golf Data API doesn't populate player fields until ~1 week before tournament start. Tournament import automation must account for this timing.
 
 ## Database Schema
 

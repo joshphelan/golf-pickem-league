@@ -141,14 +141,8 @@ export default function DashboardPage() {
               {/* Tournaments Section - Owner Only */}
               {user?.is_owner && (
                 <div>
-                  <div className="flex justify-between items-center mb-4">
+                  <div className="mb-4">
                     <h2 className="text-2xl font-semibold text-gray-900">Tournaments</h2>
-                    <Link
-                      href="/admin/import"
-                      className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md font-medium"
-                    >
-                      Import Tournament
-                    </Link>
                   </div>
 
                   {tournaments.length === 0 ? (

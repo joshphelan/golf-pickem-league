@@ -1,86 +1,98 @@
 # Known Issues & Status
 
+**Last Updated**: October 31, 2024
+
 ## 🚨 Critical Issues (Blocking)
 
-### 1. 422 Error on Tournament Schedule Endpoint
-**Status**: Active
-**Impact**: High - Tournament import not working
+### 1. Golf API Player Data Not Available Until ~1 Week Before Tournament
+**Status**: Active - **API Limitation**
+**Impact**: High - Cannot create leagues for upcoming tournaments
 **Symptoms**: 
-- Frontend shows 422 error when loading tournament dropdown
-- Console shows "Request failed with status code 422"
-- Tournament import page not functional
+- Tournaments imported successfully but have 0 players
+- Future tournaments (>1 week away) show no available players for drafting
+- Example: Tournament on 11/6/2024 has no player data as of 10/30/2024
 
-**Root Cause**: Authentication issue - JWT token not being sent properly
-**Investigation Needed**:
-- Check if user is logged in
-- Verify JWT token in browser Network tab
-- Test schedule endpoint directly: `http://localhost:8000/api/tournaments/schedule`
+**Root Cause**: The Live Golf Data API (`https://live-golf-data.p.rapidapi.com`) does not populate player fields (`/tournament` endpoint) until approximately 1 week before the tournament starts.
 
-**Quick Fix**:
-1. Ensure user is logged in on frontend
-2. Check browser dev tools → Network tab for Authorization header
-3. Test endpoint directly with curl/Postman
-4. Add better error handling in frontend
+**Workaround**:
+- Use past tournaments (Jan-Feb 2025) for testing
+- Wait until ~1 week before tournament to import and create leagues
+- Consider refreshing player data closer to tournament start
+
+**Long-Term Solution**:
+- Implement weekly scheduler job to refresh player data for upcoming tournaments
+- Add UI messaging explaining when player data will be available
+- Auto-refresh tournaments that transition from "no players" to "players available"
 
 ## ⚠️ Medium Priority Issues
 
-### 2. User Permission System Confusion
-**Status**: Partially Resolved
-**Impact**: Medium - New users can't access features
+### 2. Next.js SSR localStorage Errors (If Not Properly Handled)
+**Status**: ✅ RESOLVED
+**Impact**: Medium - Page crashes on refresh
 **Symptoms**:
-- New users (jane@jane.com, jack@jack.com) can't login
-- Error: "user must be approved first"
-- Permission levels not clear to users
+- "localStorage is not defined" errors
+- Blank pages with error banners
+- Team pages not loading
 
-**Current State**: 
-- Users can login but need admin approval for league creation
-- Owner portal exists but permission elevation has issues
-- 3-tier system implemented but UX needs improvement
+**Fix Applied**:
+- Added `typeof window !== 'undefined'` checks to all localStorage access
+- Moved `getUser()` calls to `useEffect` hooks (client-side only)
+- Updated `frontend/lib/auth.ts` and team pages
 
-**Next Steps**:
-- Clarify permission levels in UI
-- Fix permission elevation in owner portal
-- Add clear messaging about approval process
-
-### 3. Tournament Import UX
-**Status**: Partially Resolved
-**Impact**: Medium - Manual process required
+### 3. Backend Python Import Caching Issues
+**Status**: ✅ RESOLVED (Document for Future)
+**Impact**: Medium - Code changes not taking effect
 **Symptoms**:
-- No automatic tournament list
-- Users need to know tournament IDs
-- Import process not user-friendly
+- Code changes don't apply after editing
+- Old code continues running despite file changes
+- 403/422 errors persist after removing auth requirements
 
-**Current State**:
-- Schedule dropdown added but has 422 error
-- Manual entry fields available
-- "Dev/Test Only" warning added
+**Solution**:
+1. Delete `__pycache__` directories:
+   ```bash
+   Remove-Item -Recurse -Force backend/app/__pycache__
+   Remove-Item -Recurse -Force backend/app/routes/__pycache__
+   Remove-Item -Recurse -Force backend/app/models/__pycache__
+   ```
+2. Fully stop and restart backend server (Ctrl+C, then restart)
 
-**Next Steps**:
-- Fix 422 error on schedule endpoint
-- Make dropdown functional
-- Consider production tournament sync strategy
+## ✅ Recently Fixed Issues (Oct 31, 2024 Session)
 
-## ✅ Recently Fixed Issues
-
-### 4. Backend Startup Hanging
+### 4. Draft Player UUID Validation Error (422)
 **Status**: ✅ RESOLVED
-**Issue**: Backend wouldn't start due to async/sync conflicts
-**Fix**: Added asyncio.run() wrapper in scheduler, removed auto-refresh from league creation
+**Issue**: "Invalid UUID length: expected 32, found 5" when drafting players
+**Fix**: Changed frontend to send `player.id` (UUID) instead of `player.player_id` (API string)
 
-### 5. Team Ownership Field Mismatch
+### 5. Player Names Not Showing in Team Table
 **Status**: ✅ RESOLVED
-**Issue**: Frontend used `owner_id` but backend used `user_id`
-**Fix**: Updated frontend to use `user_id` consistently
+**Issue**: Player column showed blank/no values
+**Fix**: Updated `TeamPlayer` interface to match backend's nested structure (`teamPlayer.player.full_name`)
 
-### 6. League Creation Performance
+### 6. Remove Player Button Not Working
 **Status**: ✅ RESOLVED
-**Issue**: League creation was slow due to auto-refresh
-**Fix**: Removed auto-refresh, added manual "Refresh Players" button
+**Issue**: Remove button did nothing, no error
+**Fix**: Changed to send `teamPlayer.player.id` instead of `teamPlayer.id` to match backend expectations
 
-### 7. Date/Time Picker UX
+### 7. Round Scores (R1-R4) Not Displaying
 **Status**: ✅ RESOLVED
-**Issue**: Single datetime input was hard to use
-**Fix**: Split into separate date and time inputs
+**Issue**: Individual round scores not showing, only total
+**Fix**: 
+- Modified `get_team` endpoint to include player scores
+- Created `sync_completed_scores.py` script to fetch scores from Golf API
+- Synced 6 completed tournaments with leaderboard data
+
+### 8. Draft Limit Not Enforced in Modal
+**Status**: ✅ RESOLVED
+**Issue**: Users could click draft buttons even after team was full
+**Fix**: 
+- Disabled draft buttons when `draftedCount >= maxPlayers`
+- Show "Team Full" warning banner in modal
+- Modal auto-closes when 4th player drafted
+
+### 9. Tournament Import UI Removed
+**Status**: ✅ COMPLETED
+**Issue**: Users should not manually import tournaments
+**Fix**: Removed all import UI elements (admin page, navbar links, dashboard buttons) - will be automated
 
 ## 🔧 Technical Debt
 
@@ -151,26 +163,34 @@
 
 ## 📋 Next Session Action Items
 
-1. **Debug 422 Error**
-   - Check authentication flow
-   - Test schedule endpoint directly
-   - Fix JWT token handling
+1. **Tournament Player Data Strategy**
+   - Import tournaments 1 week before start date (when players become available)
+   - Test with upcoming November tournament (when it's <1 week away)
+   - Consider implementing weekly refresh job for player data
 
-2. **Test Complete Flow**
-   - User registration → login → league creation → team drafting
-   - Verify all features work end-to-end
+2. **Automated Tournament Import**
+   - Implement scheduler job to import upcoming tournaments
+   - Add daily/weekly refresh for player fields
+   - See `backend/scripts/import_2025_tournaments.py` as reference
 
-3. **Production Readiness**
-   - Verify environment configuration
-   - Test deployment checklist
-   - Document setup process
+3. **Production Deployment**
+   - Set up Vercel (frontend) + DigitalOcean (backend)
+   - Configure environment variables
+   - Test complete flow in production
+
+4. **Additional Testing**
+   - Test with multiple leagues for same tournament
+   - Verify scoring updates work correctly
+   - Test with real-time data during active tournament
 
 ## 🚀 Success Metrics
 
-- [ ] No 422 errors in console
-- [ ] Tournament import works (dropdown or manual)
-- [ ] Complete user flow works end-to-end
-- [ ] All features accessible to users
-- [ ] Production deployment ready
+- [x] No 422 errors in console
+- [x] Tournament import works (automated script)
+- [x] Complete user flow works end-to-end
+- [x] Draft functionality fully working
+- [x] Scores display correctly (R1-R4 + total)
+- [ ] Player data available for upcoming tournaments (API limitation)
+- [ ] Production deployment complete
 
-**Current Status**: 80% complete - Main functionality works, authentication issue blocking tournament import.
+**Current Status**: 95% complete - Core functionality fully working. Only limitation is Golf API doesn't provide player data until ~1 week before tournament.

@@ -21,11 +21,13 @@ export default function TeamDetailsPage() {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [showDraftModal, setShowDraftModal] = useState(false);
+  const [user, setUser] = useState<any>(null);
   const params = useParams();
   const teamId = params.id as string;
-  const user = getUser();
 
   useEffect(() => {
+    // Get user on client side only
+    setUser(getUser());
     loadTeamData();
   }, []);
 
@@ -81,9 +83,19 @@ export default function TeamDetailsPage() {
 
     try {
       await teamAPI.draftPlayer(teamId, playerId);
-      setSuccessMessage('Player drafted successfully!');
-      await loadTeamData();
+      const updatedTeam = await teamAPI.getTeam(teamId);
+      setTeam(updatedTeam);
       await loadAvailablePlayers();
+      
+      // Close modal if team is now full
+      const newCount = updatedTeam.players?.length || 0;
+      if (newCount >= maxPlayers) {
+        setShowDraftModal(false);
+        setSuccessMessage('Player drafted! Your team is now full.');
+      } else {
+        setSuccessMessage('Player drafted successfully!');
+      }
+      
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to draft player');
@@ -150,7 +162,6 @@ export default function TeamDetailsPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">{team.name}</h1>
-            <p className="text-gray-600">Owner: {team.owner?.username || team.owner?.email}</p>
           </div>
 
           <ErrorMessage message={error} />
@@ -194,22 +205,22 @@ export default function TeamDetailsPage() {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/3">
                         Player
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Round 1
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
+                        R1
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Round 2
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
+                        R2
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Round 3
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
+                        R3
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Round 4
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
+                        R4
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                         Total
                       </th>
                       {isOwner && (
@@ -220,43 +231,43 @@ export default function TeamDetailsPage() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {team.players?.map((player) => (
-                      <tr key={player.player_id}>
+                    {team.players?.map((teamPlayer) => (
+                      <tr key={teamPlayer.id}>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm font-medium text-gray-900">
-                            {player.first_name} {player.last_name}
+                            {teamPlayer.player.full_name}
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {player.scores?.round_1 !== null && player.scores?.round_1 !== undefined
-                            ? player.scores.round_1
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 text-center">
+                          {teamPlayer.scores?.round_1 !== null && teamPlayer.scores?.round_1 !== undefined
+                            ? teamPlayer.scores.round_1
                             : '-'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {player.scores?.round_2 !== null && player.scores?.round_2 !== undefined
-                            ? player.scores.round_2
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 text-center">
+                          {teamPlayer.scores?.round_2 !== null && teamPlayer.scores?.round_2 !== undefined
+                            ? teamPlayer.scores.round_2
                             : '-'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {player.scores?.round_3 !== null && player.scores?.round_3 !== undefined
-                            ? player.scores.round_3
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 text-center">
+                          {teamPlayer.scores?.round_3 !== null && teamPlayer.scores?.round_3 !== undefined
+                            ? teamPlayer.scores.round_3
                             : '-'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {player.scores?.round_4 !== null && player.scores?.round_4 !== undefined
-                            ? player.scores.round_4
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 text-center">
+                          {teamPlayer.scores?.round_4 !== null && teamPlayer.scores?.round_4 !== undefined
+                            ? teamPlayer.scores.round_4
                             : '-'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                          {player.scores?.total_score !== null &&
-                          player.scores?.total_score !== undefined
-                            ? player.scores.total_score
+                        <td className="px-4 py-4 whitespace-nowrap text-sm font-semibold text-gray-900 text-center">
+                          {teamPlayer.scores?.total_score !== null &&
+                          teamPlayer.scores?.total_score !== undefined
+                            ? teamPlayer.scores.total_score
                             : '-'}
                         </td>
                         {isOwner && (
                           <td className="px-6 py-4 whitespace-nowrap text-sm">
                             <button
-                              onClick={() => handleUndraftPlayer(player.player_id)}
+                              onClick={() => handleUndraftPlayer(teamPlayer.player.id)}
                               className="text-red-600 hover:text-red-800"
                             >
                               Remove
@@ -284,21 +295,31 @@ export default function TeamDetailsPage() {
         {showDraftModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                <h2 className="text-2xl font-semibold text-gray-900">Draft Player</h2>
-                <button
-                  onClick={() => setShowDraftModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
+              <div className="px-6 py-4 border-b border-gray-200">
+                <div className="flex justify-between items-center mb-2">
+                  <h2 className="text-2xl font-semibold text-gray-900">Draft Player</h2>
+                  <button
+                    onClick={() => setShowDraftModal(false)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                </div>
+                <p className="text-sm text-gray-600">
+                  Team: {draftedCount} / {maxPlayers} players
+                  {draftedCount < maxPlayers && (
+                    <span className="text-blue-600 ml-2">
+                      ({maxPlayers - draftedCount} slots remaining)
+                    </span>
+                  )}
+                </p>
               </div>
 
               <div className="p-6">
@@ -309,6 +330,13 @@ export default function TeamDetailsPage() {
                   placeholder="Search players..."
                   className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
                 />
+
+                {draftedCount >= maxPlayers && (
+                  <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-md mb-4">
+                    <p className="font-semibold">Team is Full</p>
+                    <p className="text-sm">You have drafted all {maxPlayers} players. Remove a player to draft someone else.</p>
+                  </div>
+                )}
 
                 <div className="overflow-y-auto max-h-[50vh]">
                   {filteredPlayers.length === 0 ? (
@@ -329,11 +357,11 @@ export default function TeamDetailsPage() {
                             )}
                           </div>
                           <button
-                            onClick={() => handleDraftPlayer(player.player_id)}
-                            disabled={drafting}
+                            onClick={() => handleDraftPlayer(player.id)}
+                            disabled={drafting || draftedCount >= maxPlayers}
                             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            {drafting ? 'Drafting...' : 'Draft'}
+                            {drafting ? 'Drafting...' : draftedCount >= maxPlayers ? 'Full' : 'Draft'}
                           </button>
                         </div>
                       ))}

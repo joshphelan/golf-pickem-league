@@ -139,3 +139,94 @@ backend/
 └── Dockerfile
 ```
 
+## Background Jobs & API Usage
+
+### Overview
+The application uses APScheduler to run automated jobs that keep tournament and player data up-to-date.
+
+### API Rate Limits
+**Live Golf Data API** (RapidAPI):
+- **Limit**: 2,000 requests/month
+- **Monthly Usage**: ~378-552 calls/month
+- **Headroom**: 1,400+ requests available for testing/manual operations
+
+### Job Schedule
+
+#### 1. Daily Schedule Sync (6:00 AM daily)
+```python
+def daily_schedule_sync():
+    """Import new tournaments from PGA schedule"""
+```
+- **Frequency**: Once per day
+- **API Calls**: 1 call to `/schedule`
+- **Monthly Cost**: 30 calls
+- **Purpose**: Discover new tournaments added to schedule
+
+#### 2. Player Field Updates (7:00 AM daily)
+```python
+def update_upcoming_player_fields():
+    """Update player rosters for upcoming tournaments"""
+```
+- **Frequency**: Once per day
+- **Targets**: Tournaments starting within 14 days
+- **API Calls**: 2-3 calls to `/tournament` (one per upcoming tournament)
+- **Monthly Cost**: 60-90 calls
+- **Purpose**: Keep player fields current as rosters finalize before tournaments
+
+#### 3. Live Score Sync (Every 5 minutes during tournament hours)
+```python
+def sync_active_tournament_scores():
+    """Update live scores during active tournaments"""
+```
+- **Frequency**: Every 5 minutes
+- **Schedule**: Thursday-Sunday, 8 AM - 8 PM ET only
+- **Targets**: Active tournaments only
+- **API Calls**: 12 calls/hour × 12 hours = 144 calls per tournament
+- **Monthly Cost**: 288-432 calls (2-3 overlapping tournaments)
+- **Purpose**: Real-time score updates for active fantasy leagues
+
+### Monthly API Usage Breakdown
+| Job | Calls/Day | Monthly Total |
+|-----|-----------|---------------|
+| Schedule Sync | 1 | 30 |
+| Player Updates | 2-3 | 60-90 |
+| Score Sync | 10-14* | 288-432 |
+| **Total** | **13-18** | **378-552** |
+
+*Only during active tournament days (Thu-Sun)
+
+### Configuration
+Set in `.env` file:
+```env
+ENABLE_AUTO_SYNC=true           # Enable background jobs
+SYNC_INTERVAL_MINUTES=5         # Score sync frequency
+```
+
+### Smart Optimizations
+1. **Idempotent imports** - Won't duplicate tournaments already in DB
+2. **Time-based filtering** - Only updates relevant tournaments (14-day window)
+3. **Tournament hours only** - Score syncing only when tournaments are active
+4. **Status-based logic** - Different update strategies for upcoming/active/completed tournaments
+
+### Manual Operations
+For testing or manual imports:
+```bash
+# Import specific tournament
+POST /api/tournaments/import
+{
+  "tourn_id": "475",
+  "year": 2025
+}
+
+# Refresh players for tournament
+POST /api/tournaments/{id}/refresh-players
+
+# Sync scores for tournament
+POST /api/tournaments/{id}/sync-scores
+```
+
+### Monitoring
+- Check logs for job execution
+- Monitor API call counts in RapidAPI dashboard
+- Alert if approaching 2K monthly limit
+

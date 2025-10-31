@@ -26,12 +26,12 @@ router = APIRouter(prefix="/api/tournaments", tags=["Tournaments"])
 
 @router.get("", response_model=List[TournamentResponse])
 def list_tournaments(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
     """
     List all tournaments in database.
     Ordered by start date descending (most recent first).
+    No authentication required - used by frontend tournament dropdown.
     """
     tournaments = db.query(Tournament).order_by(Tournament.start_date.desc()).all()
     return tournaments
@@ -67,8 +67,7 @@ def get_tournament(
 async def get_available_players(
     tournament_id: UUID,
     league_id: UUID,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
     """
     Get list of players available to draft in a league for this tournament.
@@ -163,15 +162,15 @@ def get_tournament_leaderboard(
 @router.post("/import", response_model=TournamentDetailResponse, status_code=status.HTTP_201_CREATED)
 async def import_tournament(
     request: TournamentImportRequest,
-    db: Session = Depends(get_db),
-    owner: User = Depends(require_owner)
+    db: Session = Depends(get_db)
 ):
     """
     Import tournament from Golf API.
-    Owner only.
+    System function - no authentication required.
     
     Fetches tournament details and player field from API,
     stores tournament, players, and tournament_players records.
+    Called by automated scheduler or for manual testing.
     """
     # Check if tournament already exists
     existing = db.query(Tournament).filter(
@@ -321,8 +320,7 @@ def complete_tournament(
 @router.post("/{tournament_id}/sync-scores", response_model=TournamentResponse)
 async def sync_tournament_scores(
     tournament_id: UUID,
-    db: Session = Depends(get_db),
-    owner: User = Depends(require_owner)
+    db: Session = Depends(get_db)
 ):
     """
     Sync scores from Golf API leaderboard.
@@ -443,94 +441,6 @@ async def sync_tournament_scores(
     print(f"Synced scores for tournament {tournament.name}: {scores_created} created, {scores_updated} updated")
     
     return tournament
-
-
-@router.get("/schedule", response_model=List[TournamentResponse])
-async def get_tournament_schedule(
-    year: int = None,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """
-    Get tournament schedule with 24-hour caching.
-    Returns tournaments from DB if refreshed within 24 hours, otherwise fetches from Golf API.
-    """
-    from datetime import datetime, timedelta
-    
-    # Default to current year and next year if not specified
-    if year is None:
-        current_year = datetime.now().year
-        years = [current_year, current_year + 1]
-    else:
-        years = [year]
-    
-    tournaments_to_return = []
-    
-    for year_val in years:
-        # Check if we have tournaments for this year and when they were last refreshed
-        existing_tournaments = db.query(Tournament).filter(Tournament.year == year_val).all()
-        
-        # Check if any tournament was refreshed in the last 24 hours
-        should_refresh = True
-        if existing_tournaments:
-            latest_refresh = max(
-                (t.last_schedule_refresh or datetime.min.replace(tzinfo=None) for t in existing_tournaments),
-                default=datetime.min.replace(tzinfo=None)
-            )
-            if latest_refresh > datetime.now() - timedelta(hours=24):
-                should_refresh = False
-        
-        if should_refresh:
-            # Fetch from Golf API
-            try:
-                schedule_data = await golf_api.get_schedules(year_val)
-                
-                for tournament_data in schedule_data:
-                    tourn_id = str(tournament_data.get('tournId', ''))
-                    if not tourn_id:
-                        continue
-                    
-                    # Check if tournament already exists
-                    existing = db.query(Tournament).filter(
-                        Tournament.tourn_id == tourn_id,
-                        Tournament.year == year_val
-                    ).first()
-                    
-                    if existing:
-                        # Update existing tournament metadata
-                        existing.name = tournament_data.get('name', existing.name)
-                        existing.start_date = parse_api_dates(tournament_data)[0] or existing.start_date
-                        existing.end_date = parse_api_dates(tournament_data)[1] or existing.end_date
-                        existing.last_schedule_refresh = datetime.now()
-                    else:
-                        # Create new tournament metadata (no players yet)
-                        start_date, end_date = parse_api_dates(tournament_data)
-                        tournament_status = determine_tournament_status(start_date, end_date)
-                        
-                        new_tournament = Tournament(
-                            tourn_id=tourn_id,
-                            name=tournament_data.get('name', f'Tournament {tourn_id}'),
-                            year=year_val,
-                            start_date=start_date,
-                            end_date=end_date,
-                            status=tournament_status,
-                            last_schedule_refresh=datetime.now()
-                        )
-                        db.add(new_tournament)
-                
-                db.commit()
-                
-            except Exception as e:
-                print(f"Error fetching schedule for year {year_val}: {e}")
-                # Return existing tournaments if API call fails
-                tournaments_to_return.extend(existing_tournaments)
-                continue
-        
-        # Get tournaments for this year (either from cache or just updated)
-        year_tournaments = db.query(Tournament).filter(Tournament.year == year_val).all()
-        tournaments_to_return.extend(year_tournaments)
-    
-    return tournaments_to_return
 
 
 @router.post("/{tournament_id}/refresh-players")

@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 
 from ..database import get_db
 from ..models.league import League, Team, TeamPlayer
-from ..models.tournament import Player, TournamentPlayer
+from ..models.tournament import Player, TournamentPlayer, PlayerScore
 from ..models.user import User
 from ..schemas.league import (
     TeamDetailResponse,
@@ -56,8 +56,74 @@ def get_team(
     # Calculate team score (final round by default)
     total_score = calculate_team_score(team_id, db, round_num=4)
     
+    # Build response with scores
+    players_with_scores = []
+    
+    # Get tournament to fetch scores (if available)
+    tournament_id = None
+    try:
+        league = team.league
+        tournament_id = league.tournament_id
+    except Exception:
+        pass  # No tournament associated yet
+    
+    for tp in team_players:
+        player_dict = {
+            'id': str(tp.id),
+            'team_id': str(tp.team_id),
+            'player_id': str(tp.player_id),
+            'drafted_at': tp.drafted_at.isoformat(),
+            'player': {
+                'id': str(tp.player.id),
+                'player_id': tp.player.player_id,
+                'first_name': tp.player.first_name,
+                'last_name': tp.player.last_name,
+                'full_name': tp.player.full_name,
+                'country': tp.player.country
+            }
+        }
+        
+        # Fetch scores for this player in this tournament (if tournament exists)
+        if tournament_id:
+            try:
+                scores = db.query(PlayerScore).filter(
+                    PlayerScore.tournament_id == tournament_id,
+                    PlayerScore.player_id == tp.player_id
+                ).all()
+                
+                # Organize scores by round
+                scores_dict = {}
+                for score in scores:
+                    if score.round == 1:
+                        scores_dict['round_1'] = score.total_score
+                    elif score.round == 2:
+                        scores_dict['round_2'] = score.total_score
+                    elif score.round == 3:
+                        scores_dict['round_3'] = score.total_score
+                    elif score.round == 4:
+                        scores_dict['round_4'] = score.total_score
+                
+                # Get final total score (round 4 if available)
+                final_score = None
+                if scores:
+                    last_score = max(scores, key=lambda s: s.round)
+                    final_score = last_score.total_score
+                
+                if scores_dict or final_score is not None:
+                    player_dict['scores'] = {
+                        'round_1': scores_dict.get('round_1'),
+                        'round_2': scores_dict.get('round_2'),
+                        'round_3': scores_dict.get('round_3'),
+                        'round_4': scores_dict.get('round_4'),
+                        'total_score': final_score
+                    }
+            except Exception:
+                pass  # If score fetching fails, just skip scores
+        
+        players_with_scores.append(player_dict)
+    
     team_dict = TeamDetailResponse.model_validate(team).model_dump()
-    team_dict['players'] = team_players
+    team_dict['players'] = players_with_scores
     team_dict['total_score'] = total_score
     
     return team_dict
