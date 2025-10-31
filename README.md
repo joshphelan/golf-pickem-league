@@ -76,16 +76,6 @@ npm run dev
 - **Admin Portal**: User management (tournament import UI removed - will be automated)
 - **SSR Safety**: All localStorage access properly guarded
 
-### 🔧 October 31 Session Fixes
-- ✅ Fixed UUID validation errors in draft/undraft
-- ✅ Fixed player names not displaying (nested structure issue)
-- ✅ Fixed round scores not showing (added to API response)
-- ✅ Fixed remove player button (correct UUID passing)
-- ✅ Fixed draft limit enforcement (buttons disabled at 4 players)
-- ✅ Fixed SSR localStorage errors (typeof window checks)
-- ✅ Created score sync script for completed tournaments
-- ✅ Removed tournament import UI (will be automated)
-
 ### 🚨 Known Limitation
 **Golf API Player Data Timing**: The Live Golf Data API doesn't populate player fields until ~1 week before tournament start. Currently imported tournaments >1 week away have 0 players. Use past tournaments (Jan-Feb 2025) for testing.
 
@@ -157,12 +147,6 @@ See `PRODUCTION_CHECKLIST.md` for deployment steps.
 ## 🔄 Next Session Resume
 
 See `RESUME_GUIDE.md` for how to pick up development.
-
-## 🐛 Known Issues
-
-- 422 error on tournament schedule endpoint (authentication issue) - **Currently being tested**
-- Need to verify JWT token handling in frontend
-- Tournament import requires manual API key setup
 
 ## 🧪 Testing In Progress
 
