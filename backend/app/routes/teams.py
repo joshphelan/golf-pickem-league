@@ -53,8 +53,8 @@ def get_team(
     # Get team players
     team_players = db.query(TeamPlayer).filter(TeamPlayer.team_id == team_id).all()
     
-    # Calculate team score (final round by default)
-    total_score = calculate_team_score(team_id, db, round_num=4)
+    # Calculate team score (auto-detects latest round)
+    total_score = calculate_team_score(team_id, db)
     
     # Build response with scores
     players_with_scores = []
@@ -79,7 +79,8 @@ def get_team(
                 'first_name': tp.player.first_name,
                 'last_name': tp.player.last_name,
                 'full_name': tp.player.full_name,
-                'country': tp.player.country
+                'country': tp.player.country,
+                'created_at': tp.player.created_at.isoformat()
             }
         }
         
@@ -224,13 +225,8 @@ def add_player_to_team(
     db.add(team_player)
     db.commit()
     
-    # Return updated team
-    team_players = db.query(TeamPlayer).filter(TeamPlayer.team_id == team_id).all()
-    team_dict = TeamDetailResponse.model_validate(team).model_dump()
-    team_dict['players'] = team_players
-    team_dict['total_score'] = None
-    
-    return team_dict
+    # Return updated team using the same logic as get_team
+    return get_team(team_id, db, current_user)
 
 
 @router.delete("/{team_id}/players/{player_id}", response_model=TeamDetailResponse)
@@ -284,13 +280,8 @@ def remove_player_from_team(
     db.delete(team_player)
     db.commit()
     
-    # Return updated team
-    team_players = db.query(TeamPlayer).filter(TeamPlayer.team_id == team_id).all()
-    team_dict = TeamDetailResponse.model_validate(team).model_dump()
-    team_dict['players'] = team_players
-    team_dict['total_score'] = None
-    
-    return team_dict
+    # Return updated team using the same logic as get_team
+    return get_team(team_id, db, current_user)
 
 
 @router.get("/{team_id}/available-players", response_model=List[PlayerResponse])

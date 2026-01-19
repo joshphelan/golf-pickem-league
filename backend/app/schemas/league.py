@@ -58,6 +58,7 @@ class TeamPlayerResponse(BaseModel):
     player_id: UUID
     player: PlayerResponse
     drafted_at: datetime
+    scores: Optional[dict] = None
     
     class Config:
         from_attributes = True

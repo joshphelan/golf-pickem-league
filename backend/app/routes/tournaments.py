@@ -388,51 +388,93 @@ async def sync_tournament_scores(
             # Player not in our database yet (not imported with tournament)
             continue
         
-        # Parse score
-        total_score_str = row.get('total', 'E')
-        total_score = parse_golf_score(total_score_str)
-        
-        if total_score is None:
-            # Invalid score (WD, CUT, etc.)
-            continue
-        
-        # Parse position
+        # Parse position and status (same for all rounds)
         position_str = row.get('position', '')
         try:
-            # Remove "T" prefix if present (T3 -> 3)
             position = int(position_str.replace('T', ''))
         except (ValueError, AttributeError):
             position = None
         
-        # Check if player made cut
         player_status = row.get('status', '')
         made_cut = player_status not in ['CUT', 'WD', 'WITHDRAWN']
         
-        # Check if score already exists for this round
-        existing_score = db.query(PlayerScore).filter(
-            PlayerScore.tournament_id == tournament.id,
-            PlayerScore.player_id == player.id,
-            PlayerScore.round == current_round
-        ).first()
+        # Parse rounds array to get per-round scores
+        rounds = row.get('rounds', [])
+        if not rounds:
+            # Fallback: use top-level total for current round only
+            total_score_str = row.get('total', 'E')
+            total_score = parse_golf_score(total_score_str)
+            
+            if total_score is not None:
+                existing_score = db.query(PlayerScore).filter(
+                    PlayerScore.tournament_id == tournament.id,
+                    PlayerScore.player_id == player.id,
+                    PlayerScore.round == current_round
+                ).first()
+                
+                if existing_score:
+                    existing_score.total_score = total_score
+                    existing_score.position = position
+                    existing_score.made_cut = made_cut
+                    scores_updated += 1
+                else:
+                    new_score = PlayerScore(
+                        tournament_id=tournament.id,
+                        player_id=player.id,
+                        round=current_round,
+                        total_score=total_score,
+                        position=position,
+                        made_cut=made_cut
+                    )
+                    db.add(new_score)
+                    scores_created += 1
+            continue
         
-        if existing_score:
-            # Update existing score
-            existing_score.total_score = total_score
-            existing_score.position = position
-            existing_score.made_cut = made_cut
-            scores_updated += 1
-        else:
-            # Create new score record
-            new_score = PlayerScore(
-                tournament_id=tournament.id,
-                player_id=player.id,
-                round=current_round,
-                total_score=total_score,
-                position=position,
-                made_cut=made_cut
-            )
-            db.add(new_score)
-            scores_created += 1
+        # Process each round and calculate cumulative scores
+        cumulative_score = 0
+        for round_data in rounds:
+            round_num = round_data.get('roundId')
+            
+            # Parse roundId if it's in MongoDB format
+            if isinstance(round_num, dict):
+                round_num = int(round_num.get('$numberInt', 0))
+            elif round_num is not None:
+                round_num = int(round_num)
+            
+            score_to_par_str = round_data.get('scoreToPar', 'E')
+            round_score = parse_golf_score(score_to_par_str)
+            
+            if round_num is None or round_num == 0 or round_score is None:
+                continue
+            
+            # Add this round's score to cumulative total
+            cumulative_score += round_score
+            
+            # Upsert score record for this round
+            existing_score = db.query(PlayerScore).filter(
+                PlayerScore.tournament_id == tournament.id,
+                PlayerScore.player_id == player.id,
+                PlayerScore.round == round_num
+            ).first()
+            
+            if existing_score:
+                existing_score.round_score = round_score
+                existing_score.total_score = cumulative_score
+                existing_score.position = position
+                existing_score.made_cut = made_cut
+                scores_updated += 1
+            else:
+                new_score = PlayerScore(
+                    tournament_id=tournament.id,
+                    player_id=player.id,
+                    round=round_num,
+                    round_score=round_score,
+                    total_score=cumulative_score,
+                    position=position,
+                    made_cut=made_cut
+                )
+                db.add(new_score)
+                scores_created += 1
     
     db.commit()
     db.refresh(tournament)

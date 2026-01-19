@@ -11,7 +11,7 @@ from ..models.user import User
 def calculate_team_score(
     team_id: UUID,
     db: Session,
-    round_num: int = 4
+    round_num: Optional[int] = None
 ) -> Optional[int]:
     """
     Calculate total score for a team in a specific round.
@@ -22,7 +22,7 @@ def calculate_team_score(
     Args:
         team_id: Team UUID
         db: Database session
-        round_num: Round number (default: 4 for final)
+        round_num: Round number (if None, uses latest available round)
         
     Returns:
         Total team score (lower is better), or None if incomplete
@@ -37,6 +37,14 @@ def calculate_team_score(
         return None
     
     tournament_id = league.tournament_id
+    
+    # If no round specified, find the latest available round for this tournament
+    if round_num is None:
+        from sqlalchemy import func
+        latest_round = db.query(func.max(PlayerScore.round)).filter(
+            PlayerScore.tournament_id == tournament_id
+        ).scalar()
+        round_num = latest_round if latest_round else 4
     
     # Get all players on this team
     team_players = (
@@ -78,7 +86,7 @@ def calculate_team_score(
 def calculate_league_standings(
     league_id: UUID,
     db: Session,
-    round_num: int = 4
+    round_num: Optional[int] = None
 ) -> List[Dict]:
     """
     Calculate standings for a league.
@@ -88,7 +96,7 @@ def calculate_league_standings(
     Args:
         league_id: League UUID
         db: Database session
-        round_num: Round number (default: 4 for final)
+        round_num: Round number (if None, uses latest available round)
         
     Returns:
         List of team standings with scores
@@ -97,6 +105,14 @@ def calculate_league_standings(
     league = db.query(League).filter(League.id == league_id).first()
     if not league:
         return []
+    
+    # If no round specified, find the latest available round for this tournament
+    if round_num is None:
+        from sqlalchemy import func
+        latest_round = db.query(func.max(PlayerScore.round)).filter(
+            PlayerScore.tournament_id == league.tournament_id
+        ).scalar()
+        round_num = latest_round if latest_round else 4
     
     # Get all teams in league
     teams = db.query(Team).filter(Team.league_id == league_id).all()

@@ -78,16 +78,16 @@ async def main():
     
     print(f"[OK] Parsed {len(tournaments)} valid tournaments")
     
-    # Step 3: Sort and select first 5 + last 5
+    # Step 3: Sort and select first 5 + last 6
     tournaments_sorted = sorted(tournaments, key=lambda t: t['start_date'])
-    to_import = tournaments_sorted[:5] + tournaments_sorted[-5:]
+    to_import = tournaments_sorted[:5] + tournaments_sorted[-6:]
     
     print(f"\n[3] Selected {len(to_import)} tournaments to import:")
     print("\nFirst 5 (earliest):")
     for t in tournaments_sorted[:5]:
         print(f"  - {t['name']} ({t['start_date']})")
-    print("\nLast 5 (latest):")
-    for t in tournaments_sorted[-5:]:
+    print("\nLast 6 (latest):")
+    for t in tournaments_sorted[-6:]:
         print(f"  - {t['name']} ({t['start_date']})")
     
     # Step 4: Import each tournament via backend

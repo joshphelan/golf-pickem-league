@@ -32,7 +32,7 @@ export default function LeagueDetailsPage() {
     try {
       const [leagueData, standingsData] = await Promise.all([
         leagueAPI.getLeague(leagueId),
-        leagueAPI.getLeagueStandings(leagueId),
+        leagueAPI.getLeagueStandings(leagueId), // Auto-detects latest round
       ]);
       setLeague(leagueData);
       setStandings(standingsData.standings || []);
@@ -54,7 +54,7 @@ export default function LeagueDetailsPage() {
       await tournamentAPI.syncScores(league.tournament_id);
       setSuccessMessage('Scores synced successfully!');
       // Reload standings
-      const standingsData = await leagueAPI.getLeagueStandings(leagueId);
+      const standingsData = await leagueAPI.getLeagueStandings(leagueId); // Auto-detects latest round
       setStandings(standingsData.standings || []);
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to sync scores');
