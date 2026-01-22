@@ -7,7 +7,7 @@ A full-stack fantasy golf application where users create private leagues, draft 
 - **Frontend**: Next.js 14 + TypeScript + Tailwind CSS
 - **Backend**: FastAPI + Python 3.11+ + PostgreSQL
 - **API**: Live Golf Data (RapidAPI)
-- **Deployment**: Vercel (frontend) + DigitalOcean (backend)
+- **Deployment**: Railway (monorepo deployment - single platform)
 
 ## 🚀 Quick Start
 
@@ -165,44 +165,28 @@ curl http://localhost:8000/docs
 ```
 
 ### Frontend Testing
-See `FRONTEND_TESTING.md` for comprehensive testing guide.
+See `frontend/docs/TESTING.md` for comprehensive testing guide.
 
 ## 🚀 Production Deployment
 
-**Ready to Deploy!**
+See `DEPLOYMENT_GUIDE.md` for step-by-step deployment instructions.
 
-See `DEPLOYMENT_GUIDE.md` for comprehensive step-by-step deployment instructions.
+Deploys to Railway with:
+- Single platform for backend and frontend
+- Unified billing (~$25-30/month)
+- Persistent containers for APScheduler background jobs
+- Fast deploys (2-3 minutes)
 
-**Quick Links**:
-- Digital Ocean App Platform setup
-- Vercel frontend deployment
-- Environment variable configuration
-- Database setup and migrations
-- Scheduler verification
-- Log monitoring instructions
-
-Also see `PRODUCTION_CHECKLIST.md` for deployment checklist.
+Before deploying, check `docs/PRODUCTION_CHECKLIST.md`.
 
 ## 📚 Documentation
 
-- `DEPLOYMENT_GUIDE.md` - **Complete production deployment guide**
-- `PRODUCTION_CHECKLIST.md` - Production deployment checklist
-- `KNOWN_ISSUES.md` - Current known issues (all resolved)
-- `IMPLEMENTATION_PLAN.md` - Original development plan
-- `FRONTEND_TESTING.md` - Frontend testing guide
-
-## 🔄 Next Session Resume
-
-See `RESUME_GUIDE.md` for how to pick up development.
-
-## 🧪 Testing In Progress
-
-**Servers Running**:
-- Backend: http://localhost:8000
-- Frontend: http://localhost:3000
-- Database: PostgreSQL (Docker)
-
-**Testing Plan**: See `MANUAL_TEST_PLAN.md` and `TESTING_STATUS.md`
+- `README.md` - Project overview and quick start
+- `DEPLOYMENT_GUIDE.md` - Railway deployment guide
+- `KNOWN_ISSUES.md` - Known issues and limitations
+- `docs/PRODUCTION_CHECKLIST.md` - Pre-deployment checklist
+- `frontend/docs/TESTING.md` - Frontend testing procedures
+- `docs/archive/` - Historical development notes
 
 ## 📞 Support
 

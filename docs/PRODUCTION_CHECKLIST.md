@@ -1,11 +1,11 @@
 # Production Deployment Checklist
 
-**Last Updated**: January 20, 2026
+**Last Updated**: January 22, 2026
+
+Review this checklist before deploying. See `DEPLOYMENT_GUIDE.md` for full instructions.
 
 ## Overview
-This checklist covers all the changes needed to move from development to production for the Golf Pickem League application.
-
-**See DEPLOYMENT_GUIDE.md for detailed deployment instructions.**
+This checklist covers what to verify before deploying the Golf Pickem League to production on Railway.
 
 ## Critical Production Changes
 
@@ -118,11 +118,58 @@ See DEPLOYMENT_GUIDE.md for detailed environment variable documentation.
 
 ## Deployment Steps
 
+### Option 1: Railway Deployment (Recommended)
+
+**See RAILWAY_DEPLOYMENT_GUIDE.md for complete step-by-step instructions.**
+
+#### Quick Railway Deployment Summary
+
+1. **Create Railway Project**:
+   - Sign up at https://railway.app
+   - Connect GitHub repository
+   - Railway auto-detects backend and frontend
+
+2. **Add PostgreSQL Database**:
+   - Click "+ New" → "Database" → "PostgreSQL"
+   - DATABASE_URL auto-populated
+
+3. **Configure Backend Service**:
+   - Root: `/backend`
+   - Start: `uvicorn app.main:app --host 0.0.0.0 --port 8000`
+   - Memory: 1 GB
+   - Add all environment variables (see Section 2)
+
+4. **Configure Frontend Service**:
+   - Root: `/frontend`
+   - Start: `npm start`
+   - Memory: 512 MB
+   - Set `NEXT_PUBLIC_API_URL` to backend URL
+
+5. **Run Migrations**:
+   - Use Railway Shell or local connection
+   - Run: `alembic upgrade head`
+
+6. **Verify**:
+   - Check logs for "All 4 background jobs scheduled successfully!"
+   - Test frontend at Railway URL
+   - Verify /health endpoint
+
+**Cost**: ~$25-30/month (includes backend, frontend, database)
+
+**Advantages**:
+- Single platform management
+- Unified billing
+- Perfect for APScheduler (24/7 containers)
+- Fast deploys (2-3 minutes)
+- Excellent developer experience
+
+---
+
+### Option 2: Digital Ocean + Vercel Deployment
+
 **See DEPLOYMENT_GUIDE.md for complete step-by-step instructions.**
 
-### Quick Deployment Summary
-
-### Backend Deployment (Digital Ocean App Platform)
+#### Backend Deployment (Digital Ocean App Platform)
 1. **Create App Platform App**:
    - Connect GitHub repository
    - Source directory: `/backend`
@@ -212,7 +259,26 @@ See DEPLOYMENT_GUIDE.md for detailed environment variable documentation.
 
 ## Cost Considerations
 
-**Recommended Production Setup**:
+### Railway (Recommended)
+**Production Setup**:
+- **Backend**: FastAPI + APScheduler (~$12-15/month)
+- **Frontend**: Next.js (~$6-7/month)
+- **Database**: PostgreSQL (~$10/month)
+- **Egress**: (~$1-2/month)
+- **Total**: ~$25-30/month
+
+**Advantages**:
+- Single platform, unified billing
+- Usage-based pricing (pay for what you use)
+- $5/month in free credits
+- Perfect for APScheduler (persistent containers)
+
+See RAILWAY_DEPLOYMENT_GUIDE.md for detailed cost breakdown.
+
+---
+
+### Digital Ocean + Vercel (Alternative)
+**Production Setup**:
 - **Backend**: Digital Ocean App Platform Professional (~$12/month)
 - **Database**: Managed PostgreSQL Basic (~$15/month)
 - **Frontend**: Vercel Hobby (Free)
@@ -227,6 +293,17 @@ See DEPLOYMENT_GUIDE.md for detailed environment variable documentation.
 - **Total**: ~$5/month
 
 See DEPLOYMENT_GUIDE.md for detailed cost breakdown.
+
+---
+
+### Cost Comparison
+
+| Platform | Monthly Cost | Complexity | APScheduler Support | DX Rating |
+|----------|-------------|------------|---------------------|-----------|
+| Railway | ~$25-30 | Low (single platform) | Excellent (24/7 containers) | Excellent |
+| DO + Vercel | ~$27 | Medium (two platforms) | Good | Good |
+
+**Recommendation**: Railway for simplicity and unified management.
 
 ## Success Criteria
 ✅ **Production Ready** when:
