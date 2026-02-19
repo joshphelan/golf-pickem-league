@@ -1,4 +1,4 @@
-FROM node:20-alpine
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
@@ -11,14 +11,23 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Build the application (for production)
-# In dev, we override CMD to use npm run dev
+# Build the application
 RUN npm run build
 
-EXPOSE 3000
+# Production image
+FROM node:20-alpine AS runner
 
+WORKDIR /app
+
+ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Production command (overridden in dev docker-compose)
-CMD ["node", ".next/standalone/server.js"]
+# Copy standalone build
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/public ./public
+
+EXPOSE 3000
+
+CMD ["node", "server.js"]
