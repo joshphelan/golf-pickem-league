@@ -1,193 +1,189 @@
 # Golf Fantasy League
 
-A full-stack fantasy golf application where users create private leagues, draft PGA Tour golfers, and compete based on real tournament scores.
+Fantasy golf app where users create private leagues, draft PGA Tour golfers, and compete based on real tournament scores.
 
-## 🏗️ Architecture
+## Architecture
 
-- **Frontend**: Next.js 14 + TypeScript + Tailwind CSS
-- **Backend**: FastAPI + Python 3.11+ + PostgreSQL
+- **Frontend**: Next.js 15 + TypeScript + Tailwind CSS
+- **Backend**: FastAPI + Python 3.11 + PostgreSQL
 - **API**: Live Golf Data (RapidAPI)
-- **Deployment**: Railway (monorepo deployment - single platform)
+- **Deployment**: Railway (Dockerized)
 
-## 🚀 Quick Start
+## Quick Start (Docker)
 
-### Prerequisites
-- Node.js 18+ and npm
-- Python 3.11+
-- PostgreSQL (via Docker)
+```bash
+# Start all services with hot reload
+docker-compose up --build
 
-### Backend Setup
+# Frontend: http://localhost:3000
+# Backend:  http://localhost:8000
+# API docs: http://localhost:8000/docs
+```
+
+First user to sign up becomes the primary owner with admin access.
+
+### Rebuild After Dependency Changes
+
+```bash
+docker-compose up --build
+```
+
+Only needed when `package.json` or `requirements.txt` change. Code changes apply automatically via hot reload.
+
+### Reset Database
+
+```bash
+docker-compose down -v  # -v removes volumes (data)
+docker-compose up --build
+```
+
+## Quick Start (Manual)
+
+<details>
+<summary>Click to expand manual setup</summary>
+
+### Backend
 ```bash
 cd backend
 python -m venv venv
-# Windows:
-venv\Scripts\activate
-# macOS/Linux:
-source venv/bin/activate
-
+venv\Scripts\activate  # Windows
+source venv/bin/activate  # Mac/Linux
 pip install -r requirements.txt
 ```
 
-### Environment Setup
-Create `.env` in `backend/` directory:
-```env
-DATABASE_URL=postgresql://postgres:password@localhost:5432/golf_fantasy
-SECRET_KEY=your-secret-key-here
-GOLF_API_KEY=your-rapidapi-key
-GOLF_API_BASE_URL=https://live-golf-data.p.rapidapi.com
-
-# Scheduler Configuration (optional - defaults shown)
-ENABLE_AUTO_SYNC=true
-SYNC_INTERVAL_MINUTES=10
-TOURNAMENT_IMPORT_WINDOW_DAYS=365
-PLAYER_REFRESH_WINDOW_DAYS=7
-SCORE_SYNC_PLAYING_HOURS_START=6
-SCORE_SYNC_PLAYING_HOURS_END=22
-COMPLETED_SYNC_LOOKBACK_DAYS=7
-```
-
-**Note**: The scheduler starts automatically when the backend launches. You'll see log messages confirming all 4 jobs are scheduled.
-
-### Database Setup
+### Database
 ```bash
-# Start PostgreSQL
 docker-compose up postgres -d
-
-# Run migrations
-cd backend
-alembic upgrade head
+cd backend && alembic upgrade head
 ```
 
-### Start Backend
+### Run
 ```bash
-cd backend
-uvicorn app.main:app --reload
+# Terminal 1
+cd backend && uvicorn app.main:app --reload
+
+# Terminal 2
+cd frontend && npm install && npm run dev
+```
+</details>
+
+## Environment Variables
+
+Create `.env` in project root:
+
+```env
+# Required
+GOLF_API_KEY=your-rapidapi-key
+SECRET_KEY=your-secret-key
+
+# Optional (defaults shown)
+POSTGRES_USER=golf_user
+POSTGRES_PASSWORD=golf_password
+POSTGRES_DB=golf_league_db
 ```
 
-### Frontend Setup
-```bash
-cd frontend
-npm install
-npm run dev
+## Container Architecture
+
+```
+docker-compose.yml (Development)
+├── postgres      - Database with persistent volume
+├── backend       - FastAPI with hot reload (volume mount)
+└── frontend      - Next.js with hot reload (volume mount)
+
+docker-compose.prod.yml (Production testing)
+├── postgres      - Database
+├── backend       - FastAPI (no volume mount, runs Dockerfile CMD)
+└── frontend      - Next.js standalone build
 ```
 
-## 🎯 Current Status: Production Ready (99%)
+### Key Files
 
-**Last Updated**: January 20, 2026
+| File | Purpose |
+|------|---------|
+| `docker-compose.yml` | Local development with hot reload |
+| `docker-compose.prod.yml` | Test production builds locally |
+| `backend/Dockerfile` | Backend container (runs migrations on start) |
+| `frontend/Dockerfile` | Frontend container (multi-stage, standalone build) |
+| `frontend/next.config.ts` | `output: 'standalone'` for optimized Docker builds |
 
-### ✅ Completed Features
-- **Authentication System**: 3-tier permissions (User/Admin/Owner)
-- **Automated Scheduler**: 4 background jobs for tournament/player/score management
-  - Job #1: Daily tournament import (6 AM ET)
-  - Job #2: Weekly player refresh (Fridays 6 PM ET)
-  - Job #3: Active score sync (every 10 minutes)
-  - Job #4: Completed tournament sync (Sundays 10 PM ET)
-- **Tournament Management**: Fully automated import and refresh
-- **League System**: Create, join via invite codes, standings
-- **Team Drafting**: 4-player teams with proper UUID handling
-- **Player Display**: Names, round scores (R1-R4), total scores
-- **Draft Enforcement**: Team limit properly enforced, buttons disabled when full
-- **Score Integration**: Real-time score syncing during tournaments
-- **Admin Portal**: User management (automated operations via scheduler)
-- **SSR Safety**: All localStorage access properly guarded
-- **Smart Round Detection**: Optimized syncing based on tournament status
+### How It Works
 
-### 🚨 Known Limitation
-**Golf API Player Data Timing** (Handled Automatically): The Live Golf Data API doesn't populate player fields until ~1 week before tournament start. The scheduler automatically handles this by running Job #2 (Player Refresh) every Friday at 6 PM ET, refreshing players for tournaments in the next 7 days. No manual intervention needed.
+**Development** (`docker-compose up`):
+- Source code mounted into containers
+- Changes apply immediately (hot reload)
+- `command:` overrides Dockerfile CMD
 
-For local development testing, use past tournaments (Jan-Feb 2025) with complete player data.
+**Production** (Railway or `docker-compose.prod.yml`):
+- Code baked into image at build time
+- No volume mounts
+- Dockerfile CMD runs directly
 
-**See**: `KNOWN_ISSUES.md` for details.
+## Railway Deployment
 
-## 📁 Project Structure
+Railway uses the Dockerfiles directly. Key settings:
+
+| Service | Port | Root Directory |
+|---------|------|----------------|
+| Backend | 8080 | `/backend` |
+| Frontend | 8080 | `/frontend` |
+
+### Environment Variables (Railway)
+
+**Backend:**
+```
+DATABASE_URL=${{Postgres.DATABASE_URL}}
+SECRET_KEY=<generate-with-python>
+GOLF_API_KEY=<your-key>
+CORS_ORIGINS=https://${{frontend.RAILWAY_PUBLIC_DOMAIN}}
+ENABLE_AUTO_SYNC=true
+```
+
+**Frontend:**
+```
+NEXT_PUBLIC_API_URL=https://${{backend.RAILWAY_PUBLIC_DOMAIN}}/api
+```
+
+See `DEPLOYMENT_GUIDE.md` for full deployment instructions.
+
+## Background Jobs
+
+The backend runs 4 automated jobs via APScheduler:
+
+| Job | Schedule | Purpose |
+|-----|----------|---------|
+| Tournament Import | Daily 6 AM ET | Import upcoming tournaments |
+| Player Refresh | Fridays 6 PM ET | Refresh player fields for upcoming tournaments |
+| Score Sync | Every 10 min (6 AM-10 PM ET) | Sync live scores during play |
+| Backup Sync | Sundays 10 PM ET | Sync completed tournaments |
+
+Jobs start automatically when backend launches. Check logs for: `All 4 background jobs scheduled successfully!`
+
+## Project Structure
 
 ```
 golf-pickem-league/
-├── backend/                 # FastAPI backend
+├── backend/
 │   ├── app/
-│   │   ├── models/         # SQLAlchemy models
-│   │   ├── routes/         # API endpoints
-│   │   ├── services/      # Golf API integration
-│   │   ├── schemas/       # Pydantic models
-│   │   └── utils/         # Auth, dependencies
-│   ├── scripts/           # Utility scripts
-│   │   ├── import_2025_tournaments.py
-│   │   └── sync_completed_scores.py
-│   ├── alembic/           # Database migrations
+│   │   ├── models/      # SQLAlchemy models
+│   │   ├── routes/      # API endpoints
+│   │   ├── services/    # Golf API integration
+│   │   └── utils/       # Auth, dependencies
+│   ├── alembic/         # Database migrations
+│   ├── Dockerfile
 │   └── requirements.txt
-├── frontend/               # Next.js frontend
-│   ├── app/               # App router pages
-│   ├── components/        # React components
-│   └── lib/               # API client, auth
-├── docker-compose.yml      # PostgreSQL setup
-└── .env                   # Environment variables
+├── frontend/
+│   ├── app/             # Next.js pages
+│   ├── components/      # React components
+│   ├── lib/             # API client
+│   ├── Dockerfile
+│   └── next.config.ts
+├── docker-compose.yml
+├── docker-compose.prod.yml
+└── .env
 ```
 
-## 🔧 Utility Scripts
+## Documentation
 
-**Note**: In production, these operations are fully automated by the scheduler. Scripts are provided for development/testing only.
-
-### Import Tournaments (Automated in Production)
-```bash
-cd backend
-python scripts/import_2025_tournaments.py
-```
-Imports first 5 and last 5 tournaments from 2025 PGA Tour schedule.
-
-**Production**: Job #1 runs daily at 6 AM ET automatically.
-
-### Sync Scores (Automated in Production)
-```bash
-cd backend
-python scripts/sync_completed_scores.py
-```
-Syncs round-by-round scores for all completed tournaments from the Golf API.
-
-**Production**: Jobs #3 and #4 handle this automatically:
-- Job #3: Active tournaments (every 10 minutes during play hours)
-- Job #4: Completed tournaments (Sundays 10 PM ET)
-
-### Manual Player Refresh (If Needed)
-```bash
-cd backend
-python -c "from app.services.tournament_service import refresh_tournament_players; refresh_tournament_players(tournament_id='your-id')"
-```
-
-**Production**: Job #2 runs every Friday at 6 PM ET automatically.
-
-## 🧪 Testing
-
-### Backend Testing
-```bash
-cd backend
-# Test API endpoints
-curl http://localhost:8000/docs
-```
-
-### Frontend Testing
-See `frontend/docs/TESTING.md` for comprehensive testing guide.
-
-## 🚀 Production Deployment
-
-See `DEPLOYMENT_GUIDE.md` for step-by-step deployment instructions.
-
-Deploys to Railway with:
-- Single platform for backend and frontend
-- Unified billing (~$25-30/month)
-- Persistent containers for APScheduler background jobs
-- Fast deploys (2-3 minutes)
-
-Before deploying, check `docs/PRODUCTION_CHECKLIST.md`.
-
-## 📚 Documentation
-
-- `README.md` - Project overview and quick start
-- `DEPLOYMENT_GUIDE.md` - Railway deployment guide
-- `KNOWN_ISSUES.md` - Known issues and limitations
-- `docs/PRODUCTION_CHECKLIST.md` - Pre-deployment checklist
-- `frontend/docs/TESTING.md` - Frontend testing procedures
-- `docs/archive/` - Historical development notes
-
-## 📞 Support
-
-Check the documentation files for detailed setup and troubleshooting guides.
+- `DEPLOYMENT_GUIDE.md` - Railway deployment
+- `KNOWN_ISSUES.md` - Known limitations
+- `backend/API_REFERENCE.md` - API endpoints
