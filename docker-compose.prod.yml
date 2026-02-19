@@ -1,15 +1,13 @@
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: golf_league_db
+    container_name: golf_db_prod
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-golf_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-golf_password}
       POSTGRES_DB: ${POSTGRES_DB:-golf_league_db}
-    ports:
-      - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data_prod:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-golf_user} -d ${POSTGRES_DB:-golf_league_db}"]
       interval: 10s
@@ -18,38 +16,29 @@ services:
 
   backend:
     build: ./backend
-    container_name: golf_league_backend
-    volumes:
-      - ./backend:/app
-      - /app/__pycache__
+    container_name: golf_backend_prod
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-golf_user}:${POSTGRES_PASSWORD:-golf_password}@postgres:5432/${POSTGRES_DB:-golf_league_db}
-      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-prod}
+      SECRET_KEY: ${SECRET_KEY}
       GOLF_API_KEY: ${GOLF_API_KEY}
       GOLF_API_BASE_URL: https://live-golf-data.p.rapidapi.com
       CORS_ORIGINS: http://localhost:3000
-      ENABLE_AUTO_SYNC: "false"
+      ENABLE_AUTO_SYNC: "true"
     ports:
       - "8000:8000"
     depends_on:
       postgres:
         condition: service_healthy
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
   frontend:
     build: ./frontend
-    container_name: golf_league_frontend
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-      - /app/.next
+    container_name: golf_frontend_prod
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8000/api
     ports:
       - "3000:3000"
     depends_on:
       - backend
-    command: npm run dev
 
 volumes:
-  postgres_data:
+  postgres_data_prod:
