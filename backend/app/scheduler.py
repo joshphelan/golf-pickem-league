@@ -12,7 +12,7 @@ from .database import get_db
 from .models.tournament import Tournament, Player, TournamentPlayer
 from .services.golf_api_service import golf_api
 from .utils.score_sync import sync_scores_from_leaderboard
-from .utils.date_parser import parse_api_dates
+from .utils.date_parser import parse_api_dates, parse_api_date
 from .utils.tournament_status import determine_tournament_status
 from .config import settings
 
@@ -71,10 +71,14 @@ async def _import_upcoming_tournaments_async():
         for t in all_tournaments:
             try:
                 date_info = t.get('date', {})
-                start_str = date_info.get('start')
-                if start_str:
-                    start = datetime.strptime(start_str, '%Y-%m-%d').date()
-                    if today <= start <= end_date:
+                start_obj = date_info.get('start')
+                if start_obj:
+                    # Handle both string dates and MongoDB format dicts
+                    if isinstance(start_obj, str):
+                        start = datetime.strptime(start_obj, '%Y-%m-%d').date()
+                    else:
+                        start = parse_api_date(start_obj)
+                    if start and today <= start <= end_date:
                         filtered.append(t)
             except Exception as e:
                 logger.warning(f"Failed to parse date for tournament: {e}")
