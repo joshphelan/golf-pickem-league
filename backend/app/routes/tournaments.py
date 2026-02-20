@@ -309,12 +309,20 @@ def complete_tournament(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Tournament not found"
         )
-    
+
     tournament.status = 'completed'
     db.commit()
     db.refresh(tournament)
-    
+
     return tournament
+
+
+@router.post("/admin/import-tournaments")
+async def admin_import_tournaments(owner: User = Depends(require_owner)):
+    """Manually trigger tournament import (owner only)."""
+    from ..scheduler import import_upcoming_tournaments
+    import_upcoming_tournaments()
+    return {"message": "Tournament import complete"}
 
 
 @router.post("/{tournament_id}/sync-scores", response_model=TournamentResponse)
