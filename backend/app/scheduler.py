@@ -59,20 +59,26 @@ async def _import_upcoming_tournaments_async():
             logger.error(f"Failed to fetch schedule for {year}: {e}")
             continue
 
-    # Filter: start_date between today and +365 days
+    # Filter: tournaments that are in progress or start within window
     filtered = []
     for t in all_tournaments:
         try:
             date_info = t.get('date', {})
             start_obj = date_info.get('start')
+            end_obj = date_info.get('end')
             if start_obj:
                 # Handle both string dates and MongoDB format dicts
                 if isinstance(start_obj, str):
-                    # Handle ISO format with or without time: "2026-01-15" or "2026-01-15T00:00:00"
                     start = datetime.fromisoformat(start_obj.replace('Z', '+00:00')).date()
                 else:
                     start = parse_api_date(start_obj)
-                if start and today <= start <= end_date:
+                # Parse end date to include in-progress tournaments
+                if isinstance(end_obj, str):
+                    end = datetime.fromisoformat(end_obj.replace('Z', '+00:00')).date()
+                else:
+                    end = parse_api_date(end_obj) if end_obj else start
+                # Include if: not ended yet AND starts within window
+                if end and end >= today and start <= end_date:
                     filtered.append(t)
         except Exception as e:
             logger.warning(f"Failed to parse date for tournament: {e}")
