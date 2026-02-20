@@ -8,6 +8,7 @@ from .config import settings
 engine = create_engine(
     settings.DATABASE_URL,
     pool_pre_ping=True,  # Verify connections before using
+    pool_recycle=280,  # Recycle connections before Railway's 5min timeout
     echo=False  # Set to True for SQL query logging during development
 )
 

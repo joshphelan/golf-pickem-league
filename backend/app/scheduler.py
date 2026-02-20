@@ -39,88 +39,175 @@ def import_upcoming_tournaments():
 
 async def _import_upcoming_tournaments_async():
     """Async implementation of tournament import."""
+    today = date.today()
+    end_date = today + timedelta(days=settings.TOURNAMENT_IMPORT_WINDOW_DAYS)
+
+    # PHASE 1: Fetch all API data first (no DB connection held)
+    current_year = today.year
+    years_to_fetch = [current_year, current_year + 1]
+
+    all_tournaments = []
+    for year in years_to_fetch:
+        try:
+            schedule = await golf_api.get_schedules(year)
+            all_tournaments.extend(schedule)
+            logger.warning(f"Fetched {len(schedule)} tournaments for {year}")
+        except Exception as e:
+            logger.error(f"Failed to fetch schedule for {year}: {e}")
+            continue
+
+    # Filter: start_date between today and +365 days
+    filtered = []
+    for t in all_tournaments:
+        try:
+            date_info = t.get('date', {})
+            start_obj = date_info.get('start')
+            if start_obj:
+                # Handle both string dates and MongoDB format dicts
+                if isinstance(start_obj, str):
+                    start = datetime.strptime(start_obj, '%Y-%m-%d').date()
+                else:
+                    start = parse_api_date(start_obj)
+                if start and today <= start <= end_date:
+                    filtered.append(t)
+        except Exception as e:
+            logger.warning(f"Failed to parse date for tournament: {e}")
+            continue
+
+    logger.warning(f"Found {len(filtered)} tournaments to import (within {settings.TOURNAMENT_IMPORT_WINDOW_DAYS} days)")
+
+    if not filtered:
+        logger.warning("No tournaments to import")
+        return
+
+    # PHASE 2: Get existing tournament IDs (brief DB query)
     db = next(get_db())
-
     try:
-        # Check if this is initial import (empty database)
-        tournament_count = db.query(Tournament).count()
-        is_initial_import = (tournament_count == 0)
-
-        if is_initial_import:
-            logger.info("Initial import - no tournaments in database")
-
-        today = date.today()
-        end_date = today + timedelta(days=settings.TOURNAMENT_IMPORT_WINDOW_DAYS)
-
-        # Call /schedule API for current year + next year
-        current_year = today.year
-        years_to_fetch = [current_year, current_year + 1]
-
-        all_tournaments = []
-        for year in years_to_fetch:
-            try:
-                schedule = await golf_api.get_schedules(year)
-                all_tournaments.extend(schedule)
-                logger.info(f"Fetched {len(schedule)} tournaments for {year}")
-            except Exception as e:
-                logger.error(f"Failed to fetch schedule for {year}: {e}")
-                continue
-
-        # Filter: start_date between today and +365 days
-        filtered = []
-        for t in all_tournaments:
-            try:
-                date_info = t.get('date', {})
-                start_obj = date_info.get('start')
-                if start_obj:
-                    # Handle both string dates and MongoDB format dicts
-                    if isinstance(start_obj, str):
-                        start = datetime.strptime(start_obj, '%Y-%m-%d').date()
-                    else:
-                        start = parse_api_date(start_obj)
-                    if start and today <= start <= end_date:
-                        filtered.append(t)
-            except Exception as e:
-                logger.warning(f"Failed to parse date for tournament: {e}")
-                continue
-
-        logger.info(f"Found {len(filtered)} tournaments to import (within {settings.TOURNAMENT_IMPORT_WINDOW_DAYS} days)")
-
-        # Import each tournament if not exists
-        imported_count = 0
-        skipped_count = 0
-
-        for tournament in filtered:
-            tourn_id = tournament.get('tournId')
-            year = tournament.get('year')
-
-            if not tourn_id or not year:
-                continue
-
-            existing = db.query(Tournament).filter(
-                Tournament.tourn_id == tourn_id,
-                Tournament.year == year
-            ).first()
-
-            if not existing:
-                try:
-                    # Import tournament (call internal logic)
-                    await _import_tournament_internal(tourn_id, year, db)
-                    imported_count += 1
-                except Exception as e:
-                    logger.error(f"Failed to import tournament {tourn_id} ({year}): {e}")
-                    continue
-            else:
-                skipped_count += 1
-
-        logger.info(f"Tournament import complete: {imported_count} imported, {skipped_count} already exist")
-
+        existing_keys = set()
+        for t in db.query(Tournament.tourn_id, Tournament.year).all():
+            existing_keys.add((t.tourn_id, t.year))
     finally:
         db.close()
 
+    # Filter out already-imported tournaments
+    to_import = []
+    skipped_count = 0
+    for tournament in filtered:
+        tourn_id = tournament.get('tournId')
+        year = tournament.get('year')
+        if not tourn_id or not year:
+            continue
+        if (tourn_id, year) in existing_keys:
+            skipped_count += 1
+        else:
+            to_import.append(tournament)
+
+    logger.warning(f"Will import {len(to_import)} tournaments ({skipped_count} already exist)")
+
+    # PHASE 3: Fetch tournament details from API (no DB connection)
+    tournament_data = []
+    for tournament in to_import:
+        tourn_id = tournament.get('tournId')
+        year = tournament.get('year')
+        try:
+            api_data = await golf_api.get_tournament(tourn_id, year)
+            tournament_data.append((tourn_id, year, api_data))
+        except Exception as e:
+            logger.error(f"Failed to fetch tournament {tourn_id} ({year}): {e}")
+            continue
+
+    # PHASE 4: Insert all tournaments into DB (single connection, quick inserts)
+    imported_count = 0
+    db = next(get_db())
+    try:
+        for tourn_id, year, api_data in tournament_data:
+            try:
+                _import_tournament_from_data(tourn_id, year, api_data, db)
+                imported_count += 1
+            except Exception as e:
+                logger.error(f"Failed to import tournament {tourn_id} ({year}): {e}")
+                db.rollback()
+                continue
+    finally:
+        db.close()
+
+    logger.warning(f"Tournament import complete: {imported_count} imported, {skipped_count} already exist")
+
+
+def _import_tournament_from_data(tourn_id: str, year: int, api_data: dict, db: Session):
+    """Import a tournament from pre-fetched API data (no API calls, just DB inserts)."""
+    tourn_name = api_data.get('name')
+    players_data = api_data.get('players', [])
+
+    if not tourn_name:
+        raise ValueError("Invalid response from Golf API - missing tournament name")
+
+    # Parse dates from API
+    start_date, end_date = parse_api_dates(api_data)
+
+    # Auto-detect status based on dates
+    initial_status = api_data.get('status', 'upcoming')
+    tournament_status = determine_tournament_status(start_date, end_date, initial_status)
+
+    # Extract timezone
+    timezone = api_data.get('timeZone', 'America/New_York')
+
+    # Create tournament record
+    tournament = Tournament(
+        tourn_id=tourn_id,
+        name=tourn_name,
+        year=year,
+        org_id=api_data.get('orgId', 1),
+        start_date=start_date,
+        end_date=end_date,
+        timezone=timezone,
+        status=tournament_status
+    )
+    db.add(tournament)
+    db.flush()  # Get tournament.id
+
+    # Process players
+    players_processed = 0
+    for player_data in players_data:
+        player_id_api = str(player_data.get('playerId'))
+        if not player_id_api:
+            continue
+
+        first_name = player_data.get('firstName', '')
+        last_name = player_data.get('lastName', '')
+        full_name = f"{first_name} {last_name}".strip()
+
+        if not full_name:
+            continue
+
+        # Get or create player
+        player = db.query(Player).filter(Player.player_id == player_id_api).first()
+        if not player:
+            player = Player(
+                player_id=player_id_api,
+                first_name=first_name,
+                last_name=last_name,
+                full_name=full_name,
+                country=None
+            )
+            db.add(player)
+            db.flush()
+
+        # Create tournament_player entry
+        tournament_player = TournamentPlayer(
+            tournament_id=tournament.id,
+            player_id=player.id,
+            status=player_data.get('status', 'registered')
+        )
+        db.add(tournament_player)
+        players_processed += 1
+
+    db.commit()
+    logger.warning(f"Imported {tourn_name} ({year}) with {players_processed} players")
+
 
 async def _import_tournament_internal(tourn_id: str, year: int, db: Session):
-    """Internal helper to import a single tournament."""
+    """Internal helper to import a single tournament (legacy, makes API call)."""
     # Fetch from Golf API
     api_data = await golf_api.get_tournament(tourn_id, year)
 
@@ -192,7 +279,7 @@ async def _import_tournament_internal(tourn_id: str, year: int, db: Session):
         players_processed += 1
 
     db.commit()
-    logger.info(f"Imported {tourn_name} ({year}) with {players_processed} players")
+    logger.warning(f"Imported {tourn_name} ({year}) with {players_processed} players")
 
 
 # ============================================================================
