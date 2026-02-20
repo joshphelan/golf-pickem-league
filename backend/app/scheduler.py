@@ -50,6 +50,9 @@ async def _import_upcoming_tournaments_async():
     for year in years_to_fetch:
         try:
             schedule = await golf_api.get_schedules(year)
+            # Attach year to each tournament (API doesn't include it)
+            for t in schedule:
+                t['year'] = year
             all_tournaments.extend(schedule)
             logger.warning(f"Fetched {len(schedule)} tournaments for {year}")
         except Exception as e:
@@ -65,7 +68,8 @@ async def _import_upcoming_tournaments_async():
             if start_obj:
                 # Handle both string dates and MongoDB format dicts
                 if isinstance(start_obj, str):
-                    start = datetime.strptime(start_obj, '%Y-%m-%d').date()
+                    # Handle ISO format with or without time: "2026-01-15" or "2026-01-15T00:00:00"
+                    start = datetime.fromisoformat(start_obj.replace('Z', '+00:00')).date()
                 else:
                     start = parse_api_date(start_obj)
                 if start and today <= start <= end_date:
