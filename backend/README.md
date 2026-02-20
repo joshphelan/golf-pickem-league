@@ -161,26 +161,26 @@ The application uses APScheduler to run 4 automated background jobs that keep to
 
 ### Job Schedule
 
-#### Job #1: Tournament Import (Daily at 6:00 AM ET)
+#### Job #1: Tournament Import (Weekly Monday 6:00 AM UTC)
 ```python
 def import_tournaments_job():
     """Import new tournaments from PGA schedule"""
 ```
-- **Frequency**: Daily at 6:00 AM ET
+- **Frequency**: Weekly on Mondays at 6:00 AM UTC
 - **API Calls**: 1 call to `/schedule` endpoint
-- **Monthly Cost**: ~30 calls
+- **Monthly Cost**: ~4-5 calls
 - **Purpose**: Automatically discover and import new tournaments
 - **Window**: Imports tournaments from past 365 days (configurable via `TOURNAMENT_IMPORT_WINDOW_DAYS`)
 - **Idempotent**: Won't duplicate existing tournaments
 
-#### Job #2: Player Refresh (Weekly - Fridays at 6:00 PM ET)
+#### Job #2: Player Refresh (16x per week)
 ```python
 def refresh_players_job():
     """Refresh player rosters for upcoming tournaments"""
 ```
-- **Frequency**: Every Friday at 6:00 PM ET
+- **Frequency**: Friday 6 PM ET + Saturday-Wednesday 6 AM, 12 PM, 6 PM ET
 - **API Calls**: 1 call per upcoming tournament (typically 1-3 tournaments)
-- **Monthly Cost**: ~12-16 calls (4 Fridays × 3 tournaments avg)
+- **Monthly Cost**: ~48-80 calls (16 runs/week × 3 tournaments avg)
 - **Purpose**: Update player fields as rosters finalize before tournaments
 - **Window**: Refreshes tournaments starting in next 7 days (configurable via `PLAYER_REFRESH_WINDOW_DAYS`)
 - **Golf API Limitation**: Player data not available until ~1 week before tournament
@@ -200,25 +200,25 @@ def sync_active_scores_job():
 - **Smart Detection**: Only syncs if tournament is in an active round
 - **Playing Hours**: Configurable via `SCORE_SYNC_PLAYING_HOURS_START` and `SCORE_SYNC_PLAYING_HOURS_END`
 
-#### Job #4: Completed Tournament Sync (Sundays at 10:00 PM ET)
+#### Job #4: Backup Sync (Daily at 4:00 PM UTC)
 ```python
 def sync_completed_scores_job():
     """Final sync for recently completed tournaments"""
 ```
-- **Frequency**: Weekly on Sundays at 10:00 PM ET
+- **Frequency**: Daily at 4:00 PM UTC
 - **API Calls**: 1 call per recently completed tournament (typically 1-2)
-- **Monthly Cost**: ~8-16 calls (4 Sundays × 2 tournaments avg)
+- **Monthly Cost**: ~30-60 calls (30 days × 2 tournaments avg)
 - **Purpose**: Ensure final scores are captured for completed tournaments
 - **Window**: Syncs tournaments completed in last 7 days (configurable via `COMPLETED_SYNC_LOOKBACK_DAYS`)
 
 ### Monthly API Usage Breakdown
 | Job | Frequency | Calls/Month | Purpose |
 |-----|-----------|-------------|---------|
-| Job #1: Tournament Import | Daily | ~30 | Import new tournaments |
-| Job #2: Player Refresh | Weekly (Fri) | ~12-16 | Update player rosters |
+| Job #1: Tournament Import | Weekly (Mon) | ~4-5 | Import new tournaments |
+| Job #2: Player Refresh | 16x/week | ~48-80 | Update player rosters |
 | Job #3: Active Score Sync | Every 10 min* | ~350-450 | Live score updates |
-| Job #4: Completed Sync | Weekly (Sun) | ~8-16 | Final score verification |
-| **Total** | - | **~400-512** | - |
+| Job #4: Backup Sync | Daily | ~30-60 | Final score verification |
+| **Total** | - | **~430-595** | - |
 
 *During playing hours (6 AM - 10 PM ET) only
 
@@ -259,6 +259,9 @@ COMPLETED_SYNC_LOOKBACK_DAYS=7
 ### Manual Operations
 For testing or manual imports:
 ```bash
+# Trigger bulk tournament import (owner only)
+POST /api/tournaments/admin/import-tournaments
+
 # Import specific tournament
 POST /api/tournaments/import
 {
@@ -294,7 +297,7 @@ Job #4: Sync Completed Scores - Sundays at 22:00 ET
 - Job #3 runs every 10 minutes (you'll see frequent logs)
 
 **Production**:
-- Monitor Digital Ocean Runtime Logs
+- Monitor Railway deployment logs
 - Filter by job names to track specific operations
 - Check for errors: search for "ERROR" or "Failed"
 

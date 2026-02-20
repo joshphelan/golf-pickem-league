@@ -151,10 +151,10 @@ The backend runs 4 automated jobs via APScheduler:
 
 | Job | Schedule | Purpose |
 |-----|----------|---------|
-| Tournament Import | Daily 6 AM ET | Import upcoming tournaments |
-| Player Refresh | Fridays 6 PM ET | Refresh player fields for upcoming tournaments |
-| Score Sync | Every 10 min (6 AM-10 PM ET) | Sync live scores during play |
-| Backup Sync | Sundays 10 PM ET | Sync completed tournaments |
+| Tournament Import | Weekly Monday 6 AM UTC | Import upcoming tournaments |
+| Player Refresh | Fri 6 PM + Sat-Wed 3x daily ET | Refresh player fields |
+| Score Sync | Every 10 min (6 AM-10 PM local) | Sync live scores during play |
+| Backup Sync | Daily 4 PM UTC | Sync completed tournaments |
 
 Jobs start automatically when backend launches. Check logs for: `All 4 background jobs scheduled successfully!`
 
@@ -185,5 +185,5 @@ golf-pickem-league/
 ## Documentation
 
 - `DEPLOYMENT_GUIDE.md` - Railway deployment
-- `KNOWN_ISSUES.md` - Known limitations
+- `ROADMAP.md` - Planned features and known issues
 - `backend/API_REFERENCE.md` - API endpoints
