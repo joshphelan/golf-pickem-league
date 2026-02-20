@@ -320,8 +320,8 @@ def complete_tournament(
 @router.post("/admin/import-tournaments")
 async def admin_import_tournaments(owner: User = Depends(require_owner)):
     """Manually trigger tournament import (owner only)."""
-    from ..scheduler import import_upcoming_tournaments
-    import_upcoming_tournaments()
+    from ..scheduler import _import_upcoming_tournaments_async
+    await _import_upcoming_tournaments_async()
     return {"message": "Tournament import complete"}
 
 
