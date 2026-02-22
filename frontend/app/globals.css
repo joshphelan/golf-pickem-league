@@ -1,8 +1,23 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Masters / Augusta National inspired palette */
+  --masters-green: #006747;
+  --masters-green-dark: #004d35;
+  --masters-gold: #c9a227;
+  --masters-gold-light: #d4b84a;
+  --cream: #fffef7;
+  --cream-dark: #f5f3e7;
+  --charcoal: #1a1a1a;
+  --charcoal-light: #2d2d2d;
+
+  /* Score colors - traditional golf */
+  --score-under: #c41e3a;
+  --score-over: #1a1a1a;
+  --score-even: #666666;
+
+  --background: var(--cream);
+  --foreground: var(--charcoal);
 }
 
 @theme inline {
@@ -12,15 +27,100 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Georgia', 'Times New Roman', serif;
+}
+
+/* Classic leaderboard table styling */
+.leaderboard-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.leaderboard-table th {
+  background: var(--masters-green);
+  color: white;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.7rem;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 2px solid var(--masters-gold);
+}
+
+.leaderboard-table td {
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid #e5e2d3;
+}
+
+.leaderboard-table tbody tr:hover {
+  background: var(--cream-dark);
+}
+
+/* Position styling like real leaderboards */
+.position-cell {
+  font-weight: 700;
+  min-width: 3rem;
+}
+
+/* Score styling - red for under par (traditional Masters style) */
+.score-under {
+  color: var(--score-under);
+  font-weight: 600;
+}
+
+.score-over {
+  color: var(--score-over);
+  font-weight: 600;
+}
+
+.score-even {
+  color: var(--score-even);
+  font-weight: 600;
+}
+
+/* Gold accent border */
+.gold-accent {
+  border-left: 3px solid var(--masters-gold);
+}
+
+/* Masters green header bar */
+.masters-header {
+  background: linear-gradient(to bottom, var(--masters-green), var(--masters-green-dark));
+}
+
+/* Classic button styling */
+.btn-masters {
+  background: var(--masters-green);
+  color: white;
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0.025em;
+  border: none;
+  transition: background 0.2s;
+}
+
+.btn-masters:hover {
+  background: var(--masters-green-dark);
+}
+
+/* Tournament banner */
+.tournament-banner {
+  background: var(--masters-green);
+  color: white;
+  text-align: center;
+  padding: 1.5rem;
+  border-bottom: 3px solid var(--masters-gold);
+}
+
+.tournament-banner h1 {
+  font-family: 'Georgia', serif;
+  font-size: 1.75rem;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  margin: 0;
 }

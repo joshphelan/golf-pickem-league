@@ -147,10 +147,32 @@ export const authAPI = {
   },
 };
 
+export interface LiveTournament {
+  tournament: {
+    id: string;
+    name: string;
+    status: string;
+    start_date: string;
+    end_date: string;
+  } | null;
+  current_round: number;
+  leaderboard: {
+    position: number;
+    player_name: string;
+    total_score: number;
+    made_cut: boolean;
+  }[];
+}
+
 // Tournament API
 export const tournamentAPI = {
   getTournaments: async (): Promise<Tournament[]> => {
     const response = await api.get('/tournaments');
+    return response.data;
+  },
+
+  getLiveTournament: async (): Promise<LiveTournament> => {
+    const response = await api.get('/tournaments/active/live');
     return response.data;
   },
 

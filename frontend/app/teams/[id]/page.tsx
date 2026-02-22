@@ -10,6 +10,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import { teamAPI, tournamentAPI, leagueAPI, Team, Player } from '@/lib/api';
 import { getUser } from '@/lib/auth';
 import { format } from 'date-fns';
+import { formatScore, getScoreStyle } from '@/lib/formatScore';
 
 export default function TeamDetailsPage() {
   const [team, setTeam] = useState<Team | null>(null);
@@ -22,11 +23,11 @@ export default function TeamDetailsPage() {
   const [successMessage, setSuccessMessage] = useState('');
   const [showDraftModal, setShowDraftModal] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const params = useParams();
   const teamId = params.id as string;
 
   useEffect(() => {
-    // Get user on client side only
     setUser(getUser());
     loadTeamData();
   }, []);
@@ -47,6 +48,7 @@ export default function TeamDetailsPage() {
     try {
       const teamData = await teamAPI.getTeam(teamId);
       setTeam(teamData);
+      setLastUpdated(new Date());
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to load team data');
     } finally {
@@ -58,16 +60,15 @@ export default function TeamDetailsPage() {
     if (!team?.league_id) return;
 
     try {
-      // Fetch league to get tournament_id
       const leagueData = await leagueAPI.getLeague(team.league_id);
       if (!leagueData.tournament_id) {
         setError('League has no associated tournament');
         return;
       }
-      
+
       const players = await tournamentAPI.getAvailablePlayers(
-        leagueData.tournament_id, // Correct tournament_id
-        team.league_id            // Correct league_id
+        leagueData.tournament_id,
+        team.league_id
       );
       setAvailablePlayers(players);
       setFilteredPlayers(players);
@@ -85,17 +86,16 @@ export default function TeamDetailsPage() {
       await teamAPI.draftPlayer(teamId, playerId);
       const updatedTeam = await teamAPI.getTeam(teamId);
       setTeam(updatedTeam);
+      setLastUpdated(new Date());
       await loadAvailablePlayers();
-      
-      // Close modal if team is now full
+
       const newCount = updatedTeam.players?.length || 0;
       if (newCount >= maxPlayers) {
         setShowDraftModal(false);
-        setSuccessMessage('Player drafted! Your team is now full.');
+        setSuccessMessage('Roster complete');
       } else {
-        setSuccessMessage('Player drafted successfully!');
+        setSuccessMessage('Player drafted');
       }
-      
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to draft player');
@@ -110,7 +110,7 @@ export default function TeamDetailsPage() {
 
     try {
       await teamAPI.undraftPlayer(teamId, playerId);
-      setSuccessMessage('Player removed from team');
+      setSuccessMessage('Player removed');
       await loadTeamData();
       await loadAvailablePlayers();
       setTimeout(() => setSuccessMessage(''), 3000);
@@ -129,7 +129,7 @@ export default function TeamDetailsPage() {
   if (loading) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen" style={{ background: '#fffef7' }}>
           <Navbar />
           <LoadingSpinner />
         </div>
@@ -140,9 +140,9 @@ export default function TeamDetailsPage() {
   if (!team) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen" style={{ background: '#fffef7' }}>
           <Navbar />
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="max-w-4xl mx-auto px-6 py-10">
             <ErrorMessage message="Team not found" />
           </div>
         </div>
@@ -152,216 +152,240 @@ export default function TeamDetailsPage() {
 
   const isOwner = user?.id === team.user_id;
   const draftedCount = team.players?.length || 0;
-  const maxPlayers = 4; // TODO: Get from league.team_size
+  const maxPlayers = 4;
   const canDraft = isOwner && draftedCount < maxPlayers;
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen" style={{ background: '#fffef7' }}>
         <Navbar />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">{team.name}</h1>
+
+        <div className="max-w-4xl mx-auto px-6 py-8">
+          {/* Header */}
+          <div className="mb-6">
+            <Link
+              href={`/leagues/${team.league_id}`}
+              className="text-sm hover:underline inline-flex items-center gap-1"
+              style={{ color: '#006747' }}
+            >
+              <span>←</span> Back to League
+            </Link>
+            <h1
+              className="text-2xl mt-2"
+              style={{ fontFamily: 'Georgia, serif', color: '#1a1a1a' }}
+            >
+              {team.name}
+            </h1>
+            {lastUpdated && (
+              <p className="text-xs mt-1" style={{ color: '#888' }}>
+                Updated {format(lastUpdated, 'h:mm a')}
+              </p>
+            )}
           </div>
 
           <ErrorMessage message={error} />
           {successMessage && (
-            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4">
-              <p>{successMessage}</p>
+            <div
+              className="mb-4 px-4 py-2 text-sm"
+              style={{ background: '#e8f5e9', color: '#2e7d32' }}
+            >
+              {successMessage}
             </div>
           )}
 
-          {/* Team Score */}
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Team Score</h2>
-            <div className="text-4xl font-bold text-blue-600">
-              {team.total_score !== null && team.total_score !== undefined
-                ? team.total_score
-                : 'N/A'}
+          {/* Team Score Card */}
+          <div
+            className="mb-8 flex items-center justify-between"
+            style={{
+              background: 'linear-gradient(135deg, #006747 0%, #004d35 100%)',
+              padding: '1.5rem',
+            }}
+          >
+            <div>
+              <p
+                className="text-xs uppercase tracking-widest mb-1"
+                style={{ color: 'rgba(255,255,255,0.7)' }}
+              >
+                Total Score
+              </p>
+              <p
+                className="text-4xl"
+                style={{ fontFamily: 'Georgia, serif', color: 'white' }}
+              >
+                {formatScore(team.total_score)}
+              </p>
             </div>
-            <p className="text-sm text-gray-600 mt-2">
-              {draftedCount} / {maxPlayers} players drafted
-            </p>
-          </div>
-
-          {/* Drafted Players */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
-            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-gray-900">Drafted Players</h2>
+            <div className="text-right">
+              <p
+                className="text-xs uppercase tracking-widest mb-1"
+                style={{ color: 'rgba(255,255,255,0.7)' }}
+              >
+                Roster
+              </p>
+              <p className="text-lg" style={{ color: 'white' }}>
+                {draftedCount} / {maxPlayers}
+              </p>
               {canDraft && (
                 <button
                   onClick={openDraftModal}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium"
+                  className="mt-2 px-4 py-1.5 text-sm font-medium"
+                  style={{ background: '#c9a227', color: '#1a1a1a' }}
                 >
                   Draft Player
                 </button>
               )}
             </div>
-
-            {draftedCount === 0 ? (
-              <p className="px-6 py-4 text-gray-600">No players drafted yet.</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/3">
-                        Player
-                      </th>
-                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
-                        R1
-                      </th>
-                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
-                        R2
-                      </th>
-                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
-                        R3
-                      </th>
-                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
-                        R4
-                      </th>
-                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
-                        Total
-                      </th>
-                      {isOwner && (
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Actions
-                        </th>
-                      )}
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {team.players?.map((teamPlayer) => (
-                      <tr key={teamPlayer.id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">
-                            {teamPlayer.player.full_name}
-                          </div>
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 text-center">
-                          {teamPlayer.scores?.round_1 !== null && teamPlayer.scores?.round_1 !== undefined
-                            ? teamPlayer.scores.round_1
-                            : '-'}
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 text-center">
-                          {teamPlayer.scores?.round_2 !== null && teamPlayer.scores?.round_2 !== undefined
-                            ? teamPlayer.scores.round_2
-                            : '-'}
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 text-center">
-                          {teamPlayer.scores?.round_3 !== null && teamPlayer.scores?.round_3 !== undefined
-                            ? teamPlayer.scores.round_3
-                            : '-'}
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 text-center">
-                          {teamPlayer.scores?.round_4 !== null && teamPlayer.scores?.round_4 !== undefined
-                            ? teamPlayer.scores.round_4
-                            : '-'}
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm font-semibold text-gray-900 text-center">
-                          {teamPlayer.scores?.total_score !== null &&
-                          teamPlayer.scores?.total_score !== undefined
-                            ? teamPlayer.scores.total_score
-                            : '-'}
-                        </td>
-                        {isOwner && (
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            <button
-                              onClick={() => handleUndraftPlayer(teamPlayer.player.id)}
-                              className="text-red-600 hover:text-red-800"
-                            >
-                              Remove
-                            </button>
-                          </td>
-                        )}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
           </div>
 
-          {/* Back to League */}
-          <Link
-            href={`/leagues/${team.league_id}`}
-            className="text-blue-600 hover:underline"
-          >
-            ← Back to League
-          </Link>
+          {/* Roster Table */}
+          {draftedCount === 0 ? (
+            <div
+              className="text-center py-12"
+              style={{ background: 'white', color: '#666' }}
+            >
+              No players drafted yet. Click "Draft Player" to build your team.
+            </div>
+          ) : (
+            <div style={{ background: 'white' }}>
+              {/* Header */}
+              <div
+                className="grid gap-2 px-4 py-3 text-xs uppercase tracking-wider"
+                style={{
+                  gridTemplateColumns: '1fr repeat(4, 4rem) 5rem' + (isOwner ? ' 4rem' : ''),
+                  background: '#006747',
+                  color: 'white',
+                  borderBottom: '2px solid #c9a227',
+                }}
+              >
+                <span>Player</span>
+                <span className="text-center">R1</span>
+                <span className="text-center">R2</span>
+                <span className="text-center">R3</span>
+                <span className="text-center">R4</span>
+                <span className="text-center">Total</span>
+                {isOwner && <span></span>}
+              </div>
+
+              {/* Rows */}
+              {team.players?.map((teamPlayer, idx) => (
+                <div
+                  key={teamPlayer.id}
+                  className="grid gap-2 px-4 py-4 items-center"
+                  style={{
+                    gridTemplateColumns: '1fr repeat(4, 4rem) 5rem' + (isOwner ? ' 4rem' : ''),
+                    borderBottom: '1px solid #f0f0f0',
+                    background: idx % 2 === 0 ? 'white' : '#fafafa',
+                  }}
+                >
+                  <span className="font-medium" style={{ color: '#1a1a1a' }}>
+                    {teamPlayer.player.full_name}
+                  </span>
+                  <span className="text-center" style={getScoreStyle(teamPlayer.scores?.round_1)}>
+                    {formatScore(teamPlayer.scores?.round_1)}
+                  </span>
+                  <span className="text-center" style={getScoreStyle(teamPlayer.scores?.round_2)}>
+                    {formatScore(teamPlayer.scores?.round_2)}
+                  </span>
+                  <span className="text-center" style={getScoreStyle(teamPlayer.scores?.round_3)}>
+                    {formatScore(teamPlayer.scores?.round_3)}
+                  </span>
+                  <span className="text-center" style={getScoreStyle(teamPlayer.scores?.round_4)}>
+                    {formatScore(teamPlayer.scores?.round_4)}
+                  </span>
+                  <span
+                    className="text-center font-semibold"
+                    style={getScoreStyle(teamPlayer.scores?.total_score)}
+                  >
+                    {formatScore(teamPlayer.scores?.total_score)}
+                  </span>
+                  {isOwner && (
+                    <button
+                      onClick={() => handleUndraftPlayer(teamPlayer.player.id)}
+                      className="text-sm text-right"
+                      style={{ color: '#c41e3a' }}
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Draft Modal */}
         {showDraftModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <div className="flex justify-between items-center mb-2">
-                  <h2 className="text-2xl font-semibold text-gray-900">Draft Player</h2>
-                  <button
-                    onClick={() => setShowDraftModal(false)}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
-                  </button>
+          <div
+            className="fixed inset-0 flex items-center justify-center p-4 z-50"
+            style={{ background: 'rgba(0,0,0,0.6)' }}
+          >
+            <div
+              className="w-full max-w-lg max-h-[80vh] overflow-hidden"
+              style={{ background: '#fffef7' }}
+            >
+              <div
+                className="px-5 py-4 flex justify-between items-center"
+                style={{ background: '#006747', borderBottom: '2px solid #c9a227' }}
+              >
+                <div>
+                  <h2 className="text-lg text-white" style={{ fontFamily: 'Georgia, serif' }}>
+                    Draft Player
+                  </h2>
+                  <p className="text-sm" style={{ color: 'rgba(255,255,255,0.7)' }}>
+                    {maxPlayers - draftedCount} slot{maxPlayers - draftedCount !== 1 ? 's' : ''} remaining
+                  </p>
                 </div>
-                <p className="text-sm text-gray-600">
-                  Team: {draftedCount} / {maxPlayers} players
-                  {draftedCount < maxPlayers && (
-                    <span className="text-blue-600 ml-2">
-                      ({maxPlayers - draftedCount} slots remaining)
-                    </span>
-                  )}
-                </p>
+                <button
+                  onClick={() => setShowDraftModal(false)}
+                  className="text-white/70 hover:text-white text-2xl leading-none"
+                >
+                  ×
+                </button>
               </div>
 
-              <div className="p-6">
+              <div className="p-5">
                 <input
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search players..."
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
+                  className="w-full px-4 py-2.5 border text-sm mb-4"
+                  style={{ borderColor: '#e5e2d3', outline: 'none' }}
                 />
-
-                {draftedCount >= maxPlayers && (
-                  <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-md mb-4">
-                    <p className="font-semibold">Team is Full</p>
-                    <p className="text-sm">You have drafted all {maxPlayers} players. Remove a player to draft someone else.</p>
-                  </div>
-                )}
 
                 <div className="overflow-y-auto max-h-[50vh]">
                   {filteredPlayers.length === 0 ? (
-                    <p className="text-gray-600">No available players found.</p>
+                    <p className="text-center py-8" style={{ color: '#888' }}>
+                      No available players found.
+                    </p>
                   ) : (
-                    <div className="space-y-2">
-                      {filteredPlayers.map((player) => (
+                    <div>
+                      {filteredPlayers.map((player, index) => (
                         <div
                           key={player.player_id}
-                          className="flex justify-between items-center p-3 border border-gray-200 rounded-md hover:bg-gray-50"
+                          className="flex justify-between items-center py-3 px-2"
+                          style={{
+                            borderBottom:
+                              index < filteredPlayers.length - 1 ? '1px solid #f0f0f0' : 'none',
+                          }}
                         >
                           <div>
-                            <p className="font-medium text-gray-900">
+                            <p className="font-medium" style={{ color: '#1a1a1a' }}>
                               {player.first_name} {player.last_name}
                             </p>
                             {player.is_amateur && (
-                              <span className="text-xs text-gray-500">(Amateur)</span>
+                              <span className="text-xs" style={{ color: '#888' }}>
+                                Amateur
+                              </span>
                             )}
                           </div>
                           <button
                             onClick={() => handleDraftPlayer(player.id)}
-                            disabled={drafting || draftedCount >= maxPlayers}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={drafting}
+                            className="px-4 py-1.5 text-sm font-medium disabled:opacity-50"
+                            style={{ background: '#006747', color: 'white' }}
                           >
-                            {drafting ? 'Drafting...' : draftedCount >= maxPlayers ? 'Full' : 'Draft'}
+                            {drafting ? '...' : 'Draft'}
                           </button>
                         </div>
                       ))}
@@ -376,4 +400,3 @@ export default function TeamDetailsPage() {
     </ProtectedRoute>
   );
 }
-

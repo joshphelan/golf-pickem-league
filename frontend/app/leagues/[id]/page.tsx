@@ -10,16 +10,32 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import { leagueAPI, tournamentAPI, League, LeagueStanding } from '@/lib/api';
 import { getUser } from '@/lib/auth';
 import { format } from 'date-fns';
+import { formatScore, getScoreStyle } from '@/lib/formatScore';
+
+interface StandingsResponse {
+  league_id: string;
+  league_name: string;
+  current_round: number;
+  tournament: {
+    id: string;
+    name: string;
+    status: string;
+    start_date: string;
+    end_date: string;
+  } | null;
+  standings: LeagueStanding[];
+}
 
 export default function LeagueDetailsPage() {
   const [league, setLeague] = useState<League | null>(null);
-  const [standings, setStandings] = useState<LeagueStanding[]>([]);
+  const [standingsData, setStandingsData] = useState<StandingsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  const [showInviteCode, setShowInviteCode] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const params = useParams();
   const leagueId = params.id as string;
   const user = getUser();
@@ -30,12 +46,13 @@ export default function LeagueDetailsPage() {
 
   const loadLeagueData = async () => {
     try {
-      const [leagueData, standingsData] = await Promise.all([
+      const [leagueData, standingsRes] = await Promise.all([
         leagueAPI.getLeague(leagueId),
-        leagueAPI.getLeagueStandings(leagueId), // Auto-detects latest round
+        leagueAPI.getLeagueStandings(leagueId),
       ]);
       setLeague(leagueData);
-      setStandings(standingsData.standings || []);
+      setStandingsData(standingsRes);
+      setLastUpdated(new Date());
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to load league data');
     } finally {
@@ -45,17 +62,17 @@ export default function LeagueDetailsPage() {
 
   const handleSyncScores = async () => {
     if (!league?.tournament_id) return;
-
     setError('');
     setSuccessMessage('');
     setSyncing(true);
 
     try {
       await tournamentAPI.syncScores(league.tournament_id);
-      setSuccessMessage('Scores synced successfully!');
-      // Reload standings
-      const standingsData = await leagueAPI.getLeagueStandings(leagueId); // Auto-detects latest round
-      setStandings(standingsData.standings || []);
+      setSuccessMessage('Scores synced');
+      const standingsRes = await leagueAPI.getLeagueStandings(leagueId);
+      setStandingsData(standingsRes);
+      setLastUpdated(new Date());
+      setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to sync scores');
     } finally {
@@ -65,7 +82,6 @@ export default function LeagueDetailsPage() {
 
   const handleRefreshPlayers = async () => {
     if (!league?.tournament_id) return;
-
     setError('');
     setSuccessMessage('');
     setRefreshing(true);
@@ -82,187 +98,273 @@ export default function LeagueDetailsPage() {
     }
   };
 
-  const copyInviteCode = () => {
+  const copyInviteCode = async () => {
     if (league) {
-      navigator.clipboard.writeText(league.invite_code);
-      alert('Invite code copied to clipboard!');
+      await navigator.clipboard.writeText(league.invite_code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     }
   };
 
-  // Check if user is league admin (creator) OR has owner role
   const isLeagueOwner = user?.id === league?.admin_id || user?.is_owner;
+  const userTeam = standingsData?.standings.find((s) => s.owner_name === user?.username);
+  const standings = standingsData?.standings || [];
+  const currentRound = standingsData?.current_round || 0;
+  const tournamentStatus = standingsData?.tournament?.status || league?.tournament?.status;
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen" style={{ background: '#fffef7' }}>
         <Navbar />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {loading ? (
-            <LoadingSpinner />
-          ) : !league ? (
+
+        {loading ? (
+          <LoadingSpinner />
+        ) : !league ? (
+          <div className="max-w-4xl mx-auto px-6 py-10">
             <ErrorMessage message="League not found" />
-          ) : (
-            <>
-              <div className="mb-8 flex justify-between items-start">
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-900 mb-2">{league.name}</h1>
-                  <p className="text-gray-600">
-                    {league.tournament?.name} ({league.tournament?.year})
-                  </p>
-                </div>
-                {/* Find user's team and link to draft page */}
-                {(() => {
-                  const userTeam = standings.find(s => s.owner_name === user?.username);
-                  return userTeam ? (
+          </div>
+        ) : (
+          <>
+            {/* Tournament Header */}
+            <div
+              style={{
+                background: 'linear-gradient(135deg, #006747 0%, #004d35 100%)',
+                borderBottom: '3px solid #c9a227',
+              }}
+            >
+              <div className="max-w-5xl mx-auto px-6 py-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div className="flex items-center gap-3 mb-2">
+                      {tournamentStatus === 'active' && (
+                        <span
+                          className="text-xs uppercase tracking-wider px-2 py-0.5"
+                          style={{ background: '#c9a227', color: '#1a1a1a' }}
+                        >
+                          Live - Round {currentRound}
+                        </span>
+                      )}
+                      {tournamentStatus === 'upcoming' && (
+                        <span
+                          className="text-xs uppercase tracking-wider px-2 py-0.5"
+                          style={{ background: 'rgba(255,255,255,0.2)', color: 'white' }}
+                        >
+                          Upcoming
+                        </span>
+                      )}
+                    </div>
+                    <h1
+                      className="text-2xl text-white mb-1"
+                      style={{ fontFamily: 'Georgia, serif' }}
+                    >
+                      {league.name}
+                    </h1>
+                    <p className="text-white/70 text-sm">
+                      {league.tournament?.name}
+                      {league.tournament?.start_date && (
+                        <span className="ml-2">
+                          {format(new Date(league.tournament.start_date), 'MMM d')} -{' '}
+                          {league.tournament?.end_date &&
+                            format(new Date(league.tournament.end_date), 'd, yyyy')}
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                  {userTeam && (
                     <Link
                       href={`/teams/${userTeam.team_id}`}
-                      className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-md font-semibold text-lg shadow-lg"
+                      className="px-5 py-2 text-sm font-medium"
+                      style={{ background: '#c9a227', color: '#1a1a1a' }}
                     >
-                      🏌️ Draft Your Team
+                      My Team
                     </Link>
-                  ) : null;
-                })()}
+                  )}
+                </div>
               </div>
+            </div>
 
+            <div className="max-w-5xl mx-auto px-6 py-6">
               <ErrorMessage message={error} />
               {successMessage && (
-                <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4">
-                  <p>{successMessage}</p>
+                <div
+                  className="mb-4 px-4 py-2 text-sm"
+                  style={{ background: '#e8f5e9', color: '#2e7d32' }}
+                >
+                  {successMessage}
                 </div>
               )}
 
-              {/* League Info */}
-              <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-8">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">League Information</h2>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-gray-600">Draft Deadline</p>
-                    <p className="font-medium">
-                      {format(new Date(league.draft_deadline), 'MMM d, yyyy h:mm a')}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Team Size</p>
-                    <p className="font-medium">{league.team_size} golfers per team</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Invite Code</p>
-                    <div className="flex items-center space-x-2">
-                      <p className="font-mono font-bold text-blue-600">{league.invite_code}</p>
-                      <button
-                        onClick={copyInviteCode}
-                        className="text-sm text-blue-600 hover:underline"
-                      >
-                        Copy
-                      </button>
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Tournament Status</p>
-                    <p className="font-medium capitalize">{league.tournament?.status}</p>
-                  </div>
+              {/* Info Bar */}
+              <div
+                className="flex flex-wrap items-center gap-6 mb-6 pb-5"
+                style={{ borderBottom: '1px solid #e5e2d3' }}
+              >
+                <div>
+                  <p className="text-xs uppercase tracking-wider" style={{ color: '#888' }}>
+                    Draft Deadline
+                  </p>
+                  <p className="text-sm" style={{ color: '#1a1a1a' }}>
+                    {format(new Date(league.draft_deadline), 'MMM d, h:mm a')}
+                  </p>
                 </div>
+
+                <div>
+                  <p className="text-xs uppercase tracking-wider" style={{ color: '#888' }}>
+                    Invite Code
+                  </p>
+                  <button
+                    onClick={copyInviteCode}
+                    className="flex items-center gap-2 text-sm font-mono tracking-wider transition-colors"
+                    style={{ color: '#006747' }}
+                  >
+                    {league.invite_code}
+                    <span
+                      className="text-xs px-1.5 py-0.5"
+                      style={{
+                        background: copied ? '#e8f5e9' : '#f5f5f5',
+                        color: copied ? '#2e7d32' : '#888',
+                      }}
+                    >
+                      {copied ? 'Copied!' : 'Copy'}
+                    </span>
+                  </button>
+                </div>
+
+                <div className="flex-1"></div>
 
                 {isLeagueOwner && (
-                  <div className="mt-4 pt-4 border-t border-gray-200">
-                    <div className="flex gap-3">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleSyncScores}
+                      disabled={syncing}
+                      className="px-4 py-1.5 text-sm font-medium disabled:opacity-50 transition-opacity"
+                      style={{ background: '#006747', color: 'white' }}
+                    >
+                      {syncing ? 'Syncing...' : 'Sync Scores'}
+                    </button>
+                    {tournamentStatus === 'upcoming' && (
                       <button
-                        onClick={handleSyncScores}
-                        disabled={syncing}
-                        className="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-6 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={handleRefreshPlayers}
+                        disabled={refreshing}
+                        className="px-4 py-1.5 text-sm disabled:opacity-50"
+                        style={{ background: '#e5e2d3', color: '#1a1a1a' }}
                       >
-                        {syncing ? 'Syncing...' : 'Sync Scores'}
+                        {refreshing ? 'Refreshing...' : 'Refresh Field'}
                       </button>
-                      {league.tournament?.status === 'upcoming' && (
-                        <button
-                          onClick={handleRefreshPlayers}
-                          disabled={refreshing}
-                          className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {refreshing ? 'Refreshing...' : 'Refresh Players'}
-                        </button>
-                      )}
-                    </div>
-                    <p className="text-xs text-gray-500 mt-2">
-                      League admin/owner: Manually sync tournament scores or refresh player field
-                    </p>
+                    )}
                   </div>
                 )}
               </div>
 
-              {/* Standings */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-200">
-                  <h2 className="text-xl font-semibold text-gray-900">Standings</h2>
+              {/* Update Notice */}
+              {tournamentStatus === 'active' && (
+                <div
+                  className="mb-6 px-4 py-2 text-xs"
+                  style={{ background: '#f5f3e7', color: '#666' }}
+                >
+                  Scores update every 10 minutes during active tournament hours (6 AM - 10 PM local time)
+                  {lastUpdated && (
+                    <span className="ml-3" style={{ color: '#888' }}>
+                      Last refresh: {format(lastUpdated, 'h:mm a')}
+                    </span>
+                  )}
                 </div>
-                {standings.length === 0 ? (
-                  <p className="px-6 py-4 text-gray-600">No teams have drafted players yet.</p>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Rank
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Team
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Owner
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Score
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Players
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {standings.map((standing) => (
-                          <tr key={standing.team_id}>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                              #{standing.rank}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <Link
-                                href={`/teams/${standing.team_id}`}
-                                className="text-sm text-blue-600 hover:underline font-medium"
-                              >
-                                {standing.team_name}
-                              </Link>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                              {standing.owner_name}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                              {standing.total_score !== null ? standing.total_score : 'N/A'}
-                            </td>
-                            <td className="px-6 py-4 text-sm text-gray-600">
-                              <div className="space-y-1">
-                                {standing.players.map((player) => (
-                                  <div key={player.player_id} className="flex justify-between">
-                                    <span>{player.name}</span>
-                                    <span className="font-medium ml-2">
-                                      {player.score !== null ? player.score : '-'}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+              )}
+
+              {/* Leaderboard */}
+              <div className="mb-4 flex items-center justify-between">
+                <h2
+                  className="text-lg"
+                  style={{ fontFamily: 'Georgia, serif', color: '#1a1a1a' }}
+                >
+                  Leaderboard
+                </h2>
+                {currentRound > 0 && (
+                  <span className="text-sm" style={{ color: '#888' }}>
+                    Through Round {currentRound}
+                  </span>
                 )}
               </div>
-            </>
-          )}
-        </div>
+
+              {standings.length === 0 ? (
+                <div
+                  className="text-center py-12"
+                  style={{ background: 'white', color: '#666' }}
+                >
+                  No teams have drafted players yet.
+                </div>
+              ) : (
+                <div style={{ background: 'white' }}>
+                  {/* Header */}
+                  <div
+                    className="grid gap-4 px-4 py-3 text-xs uppercase tracking-wider"
+                    style={{
+                      gridTemplateColumns: '3rem 1fr auto 5rem',
+                      background: '#006747',
+                      color: 'white',
+                      borderBottom: '2px solid #c9a227',
+                    }}
+                  >
+                    <span>Pos</span>
+                    <span>Team</span>
+                    <span>Owner</span>
+                    <span className="text-right">Score</span>
+                  </div>
+
+                  {/* Rows */}
+                  {standings.map((standing, idx) => (
+                    <div
+                      key={standing.team_id}
+                      className="grid gap-4 px-4 py-4 items-center transition-colors"
+                      style={{
+                        gridTemplateColumns: '3rem 1fr auto 5rem',
+                        borderBottom: '1px solid #f0f0f0',
+                        background: idx % 2 === 0 ? 'white' : '#fafafa',
+                      }}
+                    >
+                      <span className="font-semibold" style={{ color: '#1a1a1a' }}>
+                        {standing.rank || '-'}
+                      </span>
+                      <div>
+                        <Link
+                          href={`/teams/${standing.team_id}`}
+                          className="font-medium hover:underline"
+                          style={{ color: '#006747' }}
+                        >
+                          {standing.team_name}
+                        </Link>
+                        <div className="flex flex-wrap gap-x-3 mt-1">
+                          {standing.players.map((player) => (
+                            <span
+                              key={player.player_id}
+                              className="text-sm"
+                              style={{ color: '#888' }}
+                            >
+                              {player.name.split(' ').pop()}{' '}
+                              <span style={getScoreStyle(player.score)}>
+                                {formatScore(player.score)}
+                              </span>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      <span className="text-sm" style={{ color: '#666' }}>
+                        {standing.owner_name}
+                      </span>
+                      <span
+                        className="text-right text-lg"
+                        style={getScoreStyle(standing.total_score)}
+                      >
+                        {formatScore(standing.total_score)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </ProtectedRoute>
   );
 }
-

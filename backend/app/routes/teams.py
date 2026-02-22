@@ -92,17 +92,17 @@ def get_team(
                     PlayerScore.player_id == tp.player_id
                 ).all()
                 
-                # Organize scores by round
+                # Organize scores by round (use round_score for per-round, not cumulative)
                 scores_dict = {}
                 for score in scores:
                     if score.round == 1:
-                        scores_dict['round_1'] = score.total_score
+                        scores_dict['round_1'] = score.round_score
                     elif score.round == 2:
-                        scores_dict['round_2'] = score.total_score
+                        scores_dict['round_2'] = score.round_score
                     elif score.round == 3:
-                        scores_dict['round_3'] = score.total_score
+                        scores_dict['round_3'] = score.round_score
                     elif score.round == 4:
-                        scores_dict['round_4'] = score.total_score
+                        scores_dict['round_4'] = score.round_score
                 
                 # Get final total score (round 4 if available)
                 final_score = None

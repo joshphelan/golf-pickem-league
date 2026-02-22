@@ -30,11 +30,70 @@ def list_tournaments(
 ):
     """
     List all tournaments in database.
-    Ordered by start date descending (most recent first).
+    Ordered by start date ascending (upcoming first).
     No authentication required - used by frontend tournament dropdown.
     """
-    tournaments = db.query(Tournament).order_by(Tournament.start_date.desc()).all()
+    tournaments = db.query(Tournament).order_by(Tournament.start_date.asc()).all()
     return tournaments
+
+
+@router.get("/active/live")
+def get_live_tournament(
+    db: Session = Depends(get_db)
+):
+    """
+    Get the currently active tournament with leaderboard summary.
+    Returns None if no tournament is active.
+    Used for the live tournament panel on dashboard.
+    """
+    from sqlalchemy import func
+
+    # Find active tournament
+    tournament = db.query(Tournament).filter(
+        Tournament.status.in_(['active', 'in_progress'])
+    ).order_by(Tournament.start_date.desc()).first()
+
+    if not tournament:
+        return {"tournament": None, "leaderboard": [], "current_round": 0}
+
+    # Get current round
+    current_round = db.query(func.max(PlayerScore.round)).filter(
+        PlayerScore.tournament_id == tournament.id
+    ).scalar() or 0
+
+    # Get top 10 leaderboard
+    leaderboard = []
+    if current_round > 0:
+        scores = (
+            db.query(PlayerScore)
+            .filter(
+                PlayerScore.tournament_id == tournament.id,
+                PlayerScore.round == current_round
+            )
+            .order_by(PlayerScore.total_score.asc())
+            .limit(10)
+            .all()
+        )
+
+        for score in scores:
+            leaderboard.append({
+                "position": score.position,
+                "player_name": score.player.full_name if score.player else "Unknown",
+                "total_score": score.total_score,
+                "made_cut": score.made_cut
+            })
+
+    return {
+        "tournament": {
+            "id": str(tournament.id),
+            "name": tournament.name,
+            "status": tournament.status,
+            "start_date": tournament.start_date.isoformat() if tournament.start_date else None,
+            "end_date": tournament.end_date.isoformat() if tournament.end_date else None,
+        },
+        "current_round": current_round,
+        "leaderboard": leaderboard
+    }
 
 
 @router.get("/{tournament_id}", response_model=TournamentDetailResponse)

@@ -11,29 +11,34 @@ from ..database import Base
 class Tournament(Base):
     """PGA Tour tournament."""
     __tablename__ = "tournaments"
-    
+
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    tourn_id = Column(String, unique=True, nullable=False, index=True)  # From Free Golf API
+    tourn_id = Column(String, nullable=False, index=True)  # From Free Golf API
     name = Column(String, nullable=False)
     year = Column(Integer, nullable=False)
     org_id = Column(Integer, default=1)  # 1 = PGA Tour
-    
+
     start_date = Column(Date)
     end_date = Column(Date)
     timezone = Column(String, default='America/New_York')  # IANA timezone string
     status = Column(String, default='upcoming')  # 'upcoming', 'active', 'completed'
-    
+
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     last_schedule_refresh = Column(DateTime(timezone=True), nullable=True)
     last_player_refresh = Column(DateTime(timezone=True), nullable=True)
-    
+
     # Relationships
     leagues = relationship("League", back_populates="tournament", cascade="all, delete-orphan")
     player_scores = relationship("PlayerScore", back_populates="tournament", cascade="all, delete-orphan")
     tournament_players = relationship("TournamentPlayer", back_populates="tournament", cascade="all, delete-orphan")
-    
+
+    # Unique constraint: same tournament can exist in different years
+    __table_args__ = (
+        UniqueConstraint('tourn_id', 'year', name='unique_tournament_per_year'),
+    )
+
     def __repr__(self):
         return f"<Tournament {self.name} ({self.year})>"
 

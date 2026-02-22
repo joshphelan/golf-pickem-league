@@ -103,16 +103,17 @@ def get_my_leagues(
     """
     List all leagues the current user is a member of.
     Note: This must come BEFORE /{league_id} route to avoid path conflicts.
+    Returns leagues sorted by tournament status (active first, then upcoming, then completed).
     """
     # Get leagues where user has a team
     teams = db.query(Team).filter(Team.user_id == current_user.id).all()
     league_ids = [team.league_id for team in teams]
-    
+
     if not league_ids:
         return []
-    
+
     leagues = db.query(League).filter(League.id.in_(league_ids)).all()
-    
+
     result = []
     for league in leagues:
         member_count = db.query(Team).filter(Team.league_id == league.id).count()
@@ -120,7 +121,19 @@ def get_my_leagues(
         league_dict['tournament'] = league.tournament
         league_dict['member_count'] = member_count
         result.append(league_dict)
-    
+
+    # Sort by tournament status priority: active > upcoming > completed
+    def get_sort_key(league_dict):
+        status_order = {'active': 0, 'in_progress': 0, 'upcoming': 1, 'completed': 2}
+        tournament = league_dict.get('tournament')
+        if tournament:
+            status = tournament.status if hasattr(tournament, 'status') else tournament.get('status', 'completed')
+            start = tournament.start_date if hasattr(tournament, 'start_date') else tournament.get('start_date', '9999')
+            return (status_order.get(status, 2), str(start) if start else '9999')
+        return (2, '9999')
+
+    result.sort(key=get_sort_key)
+
     return result
 
 
@@ -279,18 +292,18 @@ def get_league_members(
 @router.get("/{league_id}/standings")
 def get_league_standings(
     league_id: UUID,
-    round_num: int = 4,
+    round_num: Optional[int] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """
     Get league standings with team scores.
-    
+
     Returns teams ranked by total score (lowest wins).
     Includes player-by-player breakdown for each team.
-    
+
     Query params:
-    - round_num: Which round to get scores for (default: 4 = final)
+    - round_num: Which round to get scores for (default: auto-detect latest)
     """
     # Verify league exists
     league = db.query(League).filter(League.id == league_id).first()
@@ -312,13 +325,30 @@ def get_league_standings(
             detail="You are not a member of this league"
         )
     
-    # Calculate standings
+    # Calculate standings (auto-detects latest round if round_num is None)
     standings = calculate_league_standings(league_id, db, round_num)
-    
+
+    # Get current round info from the tournament
+    from sqlalchemy import func
+    from ..models.tournament import PlayerScore
+
+    current_round = db.query(func.max(PlayerScore.round)).filter(
+        PlayerScore.tournament_id == league.tournament_id
+    ).scalar() or 0
+
+    tournament = league.tournament
+
     return {
         "league_id": str(league_id),
         "league_name": league.name,
-        "round": round_num,
+        "current_round": current_round,
+        "tournament": {
+            "id": str(tournament.id),
+            "name": tournament.name,
+            "status": tournament.status,
+            "start_date": tournament.start_date.isoformat() if tournament.start_date else None,
+            "end_date": tournament.end_date.isoformat() if tournament.end_date else None,
+        } if tournament else None,
         "standings": standings
     }
 

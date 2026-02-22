@@ -22,49 +22,58 @@ export default function Navbar() {
   if (!user) return null;
 
   return (
-    <nav className="bg-white shadow-sm border-b border-gray-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex">
+    <nav className="masters-header">
+      <div className="max-w-6xl mx-auto px-6">
+        <div className="flex justify-between items-center h-14">
+          <div className="flex items-center space-x-8">
             <Link href="/dashboard" className="flex items-center">
-              <span className="text-xl font-bold text-blue-600">Golf Pickem</span>
+              <span
+                className="text-lg tracking-widest text-white"
+                style={{ fontFamily: 'Georgia, serif', fontWeight: 400 }}
+              >
+                GOLF PICK&apos;EM
+              </span>
             </Link>
-            <div className="ml-10 flex items-center space-x-4">
+            <div className="flex items-center space-x-6">
               <Link
                 href="/dashboard"
-                className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
+                className="text-white/80 hover:text-white text-sm tracking-wide transition-colors"
               >
-                Dashboard
+                Leagues
               </Link>
               {user.is_owner && (
                 <Link
                   href="/admin/users"
-                  className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
+                  className="text-white/80 hover:text-white text-sm tracking-wide transition-colors"
                 >
-                  Owner Portal
+                  Admin
                 </Link>
               )}
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            <div className="text-sm">
-              <span className="text-gray-700 font-medium">{user.username}</span>
-              {user.is_owner && (
-                <span className="ml-2 px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-medium">
-                  Owner
-                </span>
-              )}
-              {user.is_league_admin && !user.is_owner && (
-                <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
-                  League Admin
-                </span>
-              )}
-            </div>
+            <span className="text-white/70 text-sm">{user.username}</span>
+            {user.is_owner && (
+              <span
+                className="px-2 py-0.5 text-xs tracking-wide"
+                style={{ background: '#c9a227', color: '#1a1a1a' }}
+              >
+                OWNER
+              </span>
+            )}
+            {user.is_league_admin && !user.is_owner && (
+              <span
+                className="px-2 py-0.5 text-xs tracking-wide"
+                style={{ background: '#c9a227', color: '#1a1a1a' }}
+              >
+                ADMIN
+              </span>
+            )}
             <button
               onClick={handleLogout}
-              className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm font-medium"
+              className="text-white/60 hover:text-white text-sm transition-colors"
             >
-              Logout
+              Sign Out
             </button>
           </div>
         </div>
@@ -72,4 +81,3 @@ export default function Navbar() {
     </nav>
   );
 }
-
