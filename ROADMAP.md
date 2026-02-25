@@ -12,6 +12,9 @@
 - [ ] **Create League dropdown shows completed tournaments** - Should only show upcoming/active
 - [ ] **Verify team total score displays correctly** on league leaderboard after restart
 
+### Fixed This Session
+- [x] **Sync error for past year tournaments** - Now skips tournaments from previous years and handles 400 API errors gracefully
+
 ---
 
 ## Recently Completed

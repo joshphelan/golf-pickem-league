@@ -7,6 +7,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 from datetime import datetime, date, timedelta
 from sqlalchemy.orm import Session
 import logging
+import httpx
 
 from .database import get_db
 from .models.tournament import Tournament, Player, TournamentPlayer
@@ -433,6 +434,11 @@ async def _sync_active_tournament_scores_async():
         status_updated_count = 0
 
         for tournament in potentially_active:
+            # Skip tournaments from previous years (they won't have current leaderboards)
+            if tournament.year < today.year:
+                logger.debug(f"Skipping {tournament.name} - tournament year {tournament.year} is in the past")
+                continue
+
             try:
                 # PHASE 2: Query leaderboard to check status
                 leaderboard_data = await golf_api.get_leaderboard(
@@ -493,6 +499,12 @@ async def _sync_active_tournament_scores_async():
                             f"({local_hour:02d}:00 {tournament.timezone})"
                         )
 
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code == 400:
+                    logger.warning(f"Skipping {tournament.name} ({tournament.year}) - not available in API")
+                else:
+                    logger.error(f"HTTP error syncing {tournament.name}: {e}")
+                continue
             except Exception as e:
                 logger.error(f"Error syncing {tournament.name}: {e}")
                 continue

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -9,7 +9,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import { tournamentAPI, leagueAPI, Tournament } from '@/lib/api';
 import { format } from 'date-fns';
 
-export default function CreateLeaguePage() {
+function CreateLeagueForm() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [name, setName] = useState('');
   const [tournamentId, setTournamentId] = useState('');
@@ -251,5 +251,13 @@ export default function CreateLeaguePage() {
         </div>
       </div>
     </ProtectedRoute>
+  );
+}
+
+export default function CreateLeaguePage() {
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <CreateLeagueForm />
+    </Suspense>
   );
 }
