@@ -49,6 +49,13 @@ def health_check():
     return {"status": "healthy"}
 
 
+@app.get("/api/admin/api-usage")
+def api_usage():
+    """Return current API call tracking stats."""
+    from .services.golf_api_service import golf_api
+    return golf_api.get_usage_stats()
+
+
 # Start scheduler on app startup
 @app.on_event("startup")
 async def startup_event():

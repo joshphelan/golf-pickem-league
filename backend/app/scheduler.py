@@ -294,15 +294,15 @@ async def _import_tournament_internal(tourn_id: str, year: int, db: Session):
 
 
 # ============================================================================
-# JOB #2: PLAYER REFRESH (16x per week - Friday 6pm + Sat-Wed 3x daily)
+# JOB #2: PLAYER REFRESH (11x per week - Friday 6pm + Sat-Wed 2x daily)
 # ============================================================================
 
 def refresh_tournament_players():
     """
     Refresh player fields for tournaments starting within 7 days.
-    Runs 16 times per week:
+    Runs 11 times per week:
     - Friday 6 PM ET (initial catch when API updates at 5pm)
-    - Saturday-Wednesday: 6 AM, 12 PM, 6 PM ET (3x daily for 5 days)
+    - Saturday-Wednesday: 6 AM, 6 PM ET (2x daily for 5 days)
     """
     try:
         asyncio.run(_refresh_tournament_players_async())
@@ -392,16 +392,14 @@ async def _refresh_tournament_players_async():
 
 
 # ============================================================================
-# JOB #3: LIVE SCORE SYNC (Every 10 minutes, timezone-aware)
+# JOB #3: LIVE SCORE SYNC (Every 15 minutes, timezone-aware)
 # ============================================================================
 
 def sync_active_tournament_scores():
     """
     Sync scores for active tournaments with timezone awareness.
-    Three-phase approach:
-    1. Identify potentially active tournaments (date-based filter)
-    2. Query leaderboard to confirm active status
-    3. Sync only during playing hours (6am-10pm tournament local time)
+    Pre-filters: playing hours (7am-9pm local), upcoming before start_date,
+    stuck-active completion. Only calls API when useful.
     """
     try:
         asyncio.run(_sync_active_tournament_scores_async())
@@ -434,13 +432,40 @@ async def _sync_active_tournament_scores_async():
         status_updated_count = 0
 
         for tournament in potentially_active:
-            # Skip tournaments from previous years (they won't have current leaderboards)
+            # 1. Skip tournaments from previous years (they won't have current leaderboards)
             if tournament.year < today.year:
                 logger.debug(f"Skipping {tournament.name} - tournament year {tournament.year} is in the past")
                 continue
 
+            # 2. Compute tournament-local time (used for playing hours + date checks)
+            tz = pytz.timezone(tournament.timezone)
+            local_now = datetime.now(tz)
+            local_hour = local_now.hour
+            local_today = local_now.date()
+
+            # 3. Check playing hours BEFORE making API call (Fix 2 - critical bug fix)
+            if not (settings.SCORE_SYNC_PLAYING_HOURS_START <= local_hour < settings.SCORE_SYNC_PLAYING_HOURS_END):
+                logger.debug(
+                    f"Skipped {tournament.name} - outside playing hours "
+                    f"({local_hour:02d}:00 {tournament.timezone})"
+                )
+                continue
+
+            # 4. Skip upcoming tournaments before their start_date (Fix 5)
+            if tournament.status == 'upcoming' and local_today < tournament.start_date:
+                logger.debug(f"Skipped {tournament.name} - upcoming, before start_date {tournament.start_date}")
+                continue
+
+            # 5. Date-based completion for stuck-active tournaments (Fix 7)
+            if tournament.status == 'active' and local_today > tournament.end_date + timedelta(days=2):
+                tournament.status = 'completed'
+                db.commit()
+                status_updated_count += 1
+                logger.info(f"{tournament.name}: active → completed (2 days past end_date {tournament.end_date})")
+                continue  # Backup sync (Job #4) will handle final score corrections
+
             try:
-                # PHASE 2: Query leaderboard to check status
+                # PHASE 2: Query leaderboard to check status (only reaches here if playing hours + valid)
                 leaderboard_data = await golf_api.get_leaderboard(
                     tournament.tourn_id,
                     tournament.year,
@@ -477,27 +502,14 @@ async def _sync_active_tournament_scores_async():
                     status_updated_count += 1
                     logger.info(f"{tournament.name}: {old_status} → {new_status}")
 
-                # PHASE 3: Sync scores only if active + during playing hours
+                # PHASE 3: Sync scores if active
                 if new_status == 'active':
-                    # Check tournament local time
-                    tz = pytz.timezone(tournament.timezone)
-                    local_now = datetime.now(tz)
-                    local_hour = local_now.hour
-
-                    # Only sync during playing hours (6am-10pm local)
-                    if settings.SCORE_SYNC_PLAYING_HOURS_START <= local_hour < settings.SCORE_SYNC_PLAYING_HOURS_END:
-                        # Process leaderboard data
-                        created, updated = sync_scores_from_leaderboard(tournament, leaderboard_data, db)
-                        synced_count += 1
-                        logger.info(
-                            f"Synced {tournament.name} ({local_hour:02d}:00 {tournament.timezone}): "
-                            f"{created} created, {updated} updated"
-                        )
-                    else:
-                        logger.debug(
-                            f"Skipped {tournament.name} - outside playing hours "
-                            f"({local_hour:02d}:00 {tournament.timezone})"
-                        )
+                    created, updated = sync_scores_from_leaderboard(tournament, leaderboard_data, db)
+                    synced_count += 1
+                    logger.info(
+                        f"Synced {tournament.name} ({local_hour:02d}:00 {tournament.timezone}): "
+                        f"{created} created, {updated} updated"
+                    )
 
             except httpx.HTTPStatusError as e:
                 if e.response.status_code == 400:
@@ -539,25 +551,26 @@ async def _sync_completed_tournaments_backup_async():
     db = next(get_db())
 
     try:
-        # Get recently completed tournaments (last 7 days)
+        # Get recently completed/straggler tournaments (last 7 days past end_date)
         cutoff_date = date.today() - timedelta(days=settings.COMPLETED_SYNC_LOOKBACK_DAYS)
 
         tournaments = db.query(Tournament).filter(
-            Tournament.status == 'completed',
-            Tournament.end_date >= cutoff_date
+            Tournament.status.in_(['completed', 'active']),
+            Tournament.end_date >= cutoff_date,
+            Tournament.end_date < date.today()  # Only past-end tournaments
         ).all()
 
         if not tournaments:
             logger.debug("No recently completed tournaments to sync")
             return
 
-        logger.info(f"Running backup sync for {len(tournaments)} recently completed tournaments")
+        logger.info(f"Running backup sync for {len(tournaments)} recently completed/straggler tournaments")
 
         synced_count = 0
 
         for tournament in tournaments:
             try:
-                logger.info(f"Running backup sync for {tournament.name}")
+                logger.info(f"Running backup sync for {tournament.name} (status: {tournament.status})")
 
                 # Call leaderboard API
                 leaderboard_data = await golf_api.get_leaderboard(
@@ -569,6 +582,12 @@ async def _sync_completed_tournaments_backup_async():
                 # Sync scores
                 created, updated = sync_scores_from_leaderboard(tournament, leaderboard_data, db)
                 synced_count += 1
+
+                # Mark active stragglers as completed
+                if tournament.status == 'active':
+                    tournament.status = 'completed'
+                    db.commit()
+                    logger.info(f"{tournament.name}: active → completed (backup sync, past end_date)")
 
                 logger.info(
                     f"Backup sync {tournament.name}: {created} created, {updated} updated"
@@ -616,20 +635,20 @@ def start_scheduler():
         )
         logger.info("Scheduled Job #2a: Player Refresh (Friday 6 PM ET)")
 
-        # Job #2: Player refresh - Saturday through Wednesday: 6 AM, 12 PM, 6 PM ET
+        # Job #2: Player refresh - Saturday through Wednesday: 6 AM, 6 PM ET
         scheduler.add_job(
             refresh_tournament_players,
             trigger=CronTrigger(
                 day_of_week='sat,sun,mon,tue,wed',
-                hour='6,12,18',
+                hour='6,18',
                 minute=0,
                 timezone='America/New_York'
             ),
             id='refresh_players_multi',
-            name='Refresh Tournament Players (Sat-Wed 3x daily)',
+            name='Refresh Tournament Players (Sat-Wed 2x daily)',
             replace_existing=True
         )
-        logger.info("Scheduled Job #2b: Player Refresh (Sat-Wed 6 AM, 12 PM, 6 PM ET)")
+        logger.info("Scheduled Job #2b: Player Refresh (Sat-Wed 6 AM, 6 PM ET)")
 
         # Job #3: Live score sync (every 10 minutes)
         scheduler.add_job(
