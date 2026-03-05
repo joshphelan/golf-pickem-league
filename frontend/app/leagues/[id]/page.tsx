@@ -7,7 +7,7 @@ import Navbar from '@/components/Navbar';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorMessage from '@/components/ErrorMessage';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { leagueAPI, tournamentAPI, League, LeagueStanding } from '@/lib/api';
+import { leagueAPI, tournamentAPI, configAPI, League, LeagueStanding, PublicConfig } from '@/lib/api';
 import { getUser } from '@/lib/auth';
 import { format } from 'date-fns';
 import { formatScore, getScoreStyle } from '@/lib/formatScore';
@@ -16,6 +16,7 @@ interface StandingsResponse {
   league_id: string;
   league_name: string;
   current_round: number;
+  last_score_sync: string | null;
   tournament: {
     id: string;
     name: string;
@@ -29,19 +30,20 @@ interface StandingsResponse {
 export default function LeagueDetailsPage() {
   const [league, setLeague] = useState<League | null>(null);
   const [standingsData, setStandingsData] = useState<StandingsResponse | null>(null);
+  const [config, setConfig] = useState<PublicConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [copied, setCopied] = useState(false);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const params = useParams();
   const leagueId = params.id as string;
   const user = getUser();
 
   useEffect(() => {
     loadLeagueData();
+    configAPI.getPublicConfig().then(setConfig).catch(() => {});
   }, []);
 
   const loadLeagueData = async () => {
@@ -52,7 +54,6 @@ export default function LeagueDetailsPage() {
       ]);
       setLeague(leagueData);
       setStandingsData(standingsRes);
-      setLastUpdated(new Date());
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to load league data');
     } finally {
@@ -71,7 +72,6 @@ export default function LeagueDetailsPage() {
       setSuccessMessage('Scores synced');
       const standingsRes = await leagueAPI.getLeagueStandings(leagueId);
       setStandingsData(standingsRes);
-      setLastUpdated(new Date());
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to sync scores');
@@ -111,6 +111,15 @@ export default function LeagueDetailsPage() {
   const standings = standingsData?.standings || [];
   const currentRound = standingsData?.current_round || 0;
   const tournamentStatus = standingsData?.tournament?.status || league?.tournament?.status;
+
+  const syncInterval = config?.sync_interval_minutes ?? 15;
+  const hoursStart = config?.playing_hours_start ?? 7;
+  const hoursEnd = config?.playing_hours_end ?? 21;
+  const formatHour = (h: number) => {
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const hour12 = h % 12 || 12;
+    return `${hour12} ${ampm}`;
+  };
 
   return (
     <ProtectedRoute>
@@ -262,10 +271,10 @@ export default function LeagueDetailsPage() {
                   className="mb-6 px-4 py-2 text-xs"
                   style={{ background: '#f5f3e7', color: '#666' }}
                 >
-                  Scores update every 10 minutes during active tournament hours (6 AM - 10 PM local time)
-                  {lastUpdated && (
+                  Scores update every {syncInterval} minutes during active tournament hours ({formatHour(hoursStart)} - {formatHour(hoursEnd)} local time)
+                  {standingsData?.last_score_sync && (
                     <span className="ml-3" style={{ color: '#888' }}>
-                      Last refresh: {format(lastUpdated, 'h:mm a')}
+                      Last refresh: {format(new Date(standingsData.last_score_sync), 'h:mm a')}
                     </span>
                   )}
                 </div>

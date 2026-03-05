@@ -336,12 +336,17 @@ def get_league_standings(
         PlayerScore.tournament_id == league.tournament_id
     ).scalar() or 0
 
+    last_score_sync = db.query(func.max(PlayerScore.updated_at)).filter(
+        PlayerScore.tournament_id == league.tournament_id
+    ).scalar()
+
     tournament = league.tournament
 
     return {
         "league_id": str(league_id),
         "league_name": league.name,
         "current_round": current_round,
+        "last_score_sync": last_score_sync.isoformat() if last_score_sync else None,
         "tournament": {
             "id": str(tournament.id),
             "name": tournament.name,

@@ -13,8 +13,9 @@ app = FastAPI(
     title="Golf Fantasy League API",
     description="Backend API for fantasy golf league application",
     version="1.0.0",
-    docs_url="/docs",
-    redoc_url="/redoc"
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None,
 )
 
 # Configure CORS
@@ -56,9 +57,51 @@ def api_usage():
     return golf_api.get_usage_stats()
 
 
+@app.get("/api/config/public")
+def get_public_config():
+    """Return public configuration values for the frontend."""
+    return {
+        "sync_interval_minutes": settings.SYNC_INTERVAL_MINUTES,
+        "playing_hours_start": settings.SCORE_SYNC_PLAYING_HOURS_START,
+        "playing_hours_end": settings.SCORE_SYNC_PLAYING_HOURS_END,
+    }
+
+
 # Start scheduler on app startup
 @app.on_event("startup")
 async def startup_event():
     """Start background scheduler on app startup."""
+    # Fix stuck tournaments: mark past tournaments as completed
+    _correct_stuck_tournaments()
+
     start_scheduler()
 
+
+def _correct_stuck_tournaments():
+    """Mark tournaments with end_date > 2 days ago as completed (idempotent)."""
+    from datetime import date, timedelta
+    from .database import get_db
+    from .models.tournament import Tournament
+    import logging
+
+    logger = logging.getLogger(__name__)
+
+    db = next(get_db())
+    try:
+        cutoff = date.today() - timedelta(days=2)
+        stuck = db.query(Tournament).filter(
+            Tournament.end_date < cutoff,
+            Tournament.status != 'completed',
+        ).all()
+
+        if stuck:
+            for t in stuck:
+                logger.info(f"Correcting tournament '{t.name}' status from '{t.status}' to 'completed'")
+                t.status = 'completed'
+            db.commit()
+            logger.info(f"Corrected {len(stuck)} stuck tournament(s)")
+    except Exception as e:
+        logger.error(f"Error correcting stuck tournaments: {e}")
+        db.rollback()
+    finally:
+        db.close()

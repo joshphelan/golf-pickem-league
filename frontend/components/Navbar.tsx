@@ -41,6 +41,12 @@ export default function Navbar() {
               >
                 Leagues
               </Link>
+              <Link
+                href="/about"
+                className="text-white/80 hover:text-white text-sm tracking-wide transition-colors"
+              >
+                About
+              </Link>
               {user.is_owner && (
                 <Link
                   href="/admin/users"

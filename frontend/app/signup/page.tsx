@@ -49,18 +49,21 @@ export default function SignupPage() {
   };
 
   if (success) {
-    const message = localStorage.getItem('signup_message') || 
+    const message = localStorage.getItem('signup_message') ||
       'Your account has been created successfully. You can now log in!';
-    
+
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
+      <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#fffef7' }}>
+        <div className="max-w-md w-full p-8" style={{ background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
           <div className="text-center">
-            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
+            <div
+              className="mx-auto flex items-center justify-center h-12 w-12 rounded-full mb-4"
+              style={{ background: '#e8f5e9' }}
+            >
               <svg
-                className="h-6 w-6 text-green-600"
+                className="h-6 w-6"
                 fill="none"
-                stroke="currentColor"
+                stroke="#2e7d32"
                 viewBox="0 0 24 24"
               >
                 <path
@@ -71,11 +74,12 @@ export default function SignupPage() {
                 />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Account Created!</h2>
-            <p className="text-gray-600 mb-6">{message}</p>
+            <h2 className="text-2xl font-bold mb-2" style={{ color: '#1a1a1a' }}>Account Created!</h2>
+            <p className="mb-6" style={{ color: '#666' }}>{message}</p>
             <Link
               href="/login"
-              className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-md"
+              className="inline-block font-medium py-2 px-6 rounded-md text-white transition-opacity hover:opacity-90"
+              style={{ background: '#006747' }}
               onClick={() => localStorage.removeItem('signup_message')}
             >
               Go to Login
@@ -87,18 +91,21 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
-        <h1 className="text-3xl font-bold text-center mb-6 text-blue-600">
-          Golf Pickem League
+    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#fffef7' }}>
+      <div className="max-w-md w-full p-8" style={{ background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+        <h1
+          className="text-3xl text-center mb-6"
+          style={{ fontFamily: 'Georgia, serif', color: '#006747' }}
+        >
+          Golf Pick&apos;em League
         </h1>
-        <h2 className="text-xl font-semibold text-center mb-6">Sign Up</h2>
+        <h2 className="text-xl font-semibold text-center mb-6" style={{ color: '#1a1a1a' }}>Sign Up</h2>
 
         <ErrorMessage message={error} />
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="email" className="block text-sm font-medium mb-1" style={{ color: '#333' }}>
               Email
             </label>
             <input
@@ -107,12 +114,13 @@ export default function SignupPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2"
+              style={{ borderColor: '#d1d5db' }}
             />
           </div>
 
           <div>
-            <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="username" className="block text-sm font-medium mb-1" style={{ color: '#333' }}>
               Username
             </label>
             <input
@@ -121,12 +129,13 @@ export default function SignupPage() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2"
+              style={{ borderColor: '#d1d5db' }}
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="password" className="block text-sm font-medium mb-1" style={{ color: '#333' }}>
               Password
             </label>
             <input
@@ -136,14 +145,16 @@ export default function SignupPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={8}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2"
+              style={{ borderColor: '#d1d5db' }}
             />
           </div>
 
           <div>
             <label
               htmlFor="confirmPassword"
-              className="block text-sm font-medium text-gray-700 mb-1"
+              className="block text-sm font-medium mb-1"
+              style={{ color: '#333' }}
             >
               Confirm Password
             </label>
@@ -154,22 +165,24 @@ export default function SignupPage() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
               minLength={8}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2"
+              style={{ borderColor: '#d1d5db' }}
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full font-medium py-2 px-4 rounded-md disabled:opacity-50 disabled:cursor-not-allowed text-white transition-opacity hover:opacity-90"
+            style={{ background: '#006747' }}
           >
             {loading ? 'Creating Account...' : 'Sign Up'}
           </button>
         </form>
 
-        <p className="mt-4 text-center text-sm text-gray-600">
+        <p className="mt-4 text-center text-sm" style={{ color: '#666' }}>
           Already have an account?{' '}
-          <Link href="/login" className="text-blue-600 hover:underline">
+          <Link href="/login" className="hover:underline" style={{ color: '#006747' }}>
             Login
           </Link>
         </p>
@@ -177,4 +190,3 @@ export default function SignupPage() {
     </div>
   );
 }
-

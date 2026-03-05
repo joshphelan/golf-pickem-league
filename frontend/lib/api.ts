@@ -266,5 +266,19 @@ export const teamAPI = {
   },
 };
 
+// Config API
+export interface PublicConfig {
+  sync_interval_minutes: number;
+  playing_hours_start: number;
+  playing_hours_end: number;
+}
+
+export const configAPI = {
+  getPublicConfig: async (): Promise<PublicConfig> => {
+    const response = await api.get('/config/public');
+    return response.data;
+  },
+};
+
 export default api;
 

@@ -7,7 +7,7 @@ import Navbar from '@/components/Navbar';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorMessage from '@/components/ErrorMessage';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { tournamentAPI, leagueAPI, Tournament, League, LiveTournament } from '@/lib/api';
+import { tournamentAPI, leagueAPI, configAPI, Tournament, League, LiveTournament, PublicConfig } from '@/lib/api';
 import { getUser } from '@/lib/auth';
 import { format } from 'date-fns';
 import { formatScore, getScoreStyle } from '@/lib/formatScore';
@@ -20,11 +20,13 @@ export default function DashboardPage() {
   const [error, setError] = useState('');
   const [joinCode, setJoinCode] = useState('');
   const [showPastLeagues, setShowPastLeagues] = useState(false);
+  const [config, setConfig] = useState<PublicConfig | null>(null);
   const router = useRouter();
   const user = getUser();
 
   useEffect(() => {
     loadData();
+    configAPI.getPublicConfig().then(setConfig).catch(() => {});
   }, []);
 
   const loadData = async () => {
@@ -380,7 +382,7 @@ export default function DashboardPage() {
                         className="px-4 py-2 text-xs"
                         style={{ background: '#fafafa', color: '#888' }}
                       >
-                        Updates every 10 min during play
+                        Updates every {config?.sync_interval_minutes ?? 15} min during play
                       </div>
                     </>
                   ) : (
