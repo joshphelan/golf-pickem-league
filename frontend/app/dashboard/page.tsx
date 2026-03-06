@@ -53,20 +53,18 @@ export default function DashboardPage() {
     }
   };
 
-  // Separate active/upcoming from completed leagues
   const activeLeagues = myLeagues.filter(
     (l) => l.tournament?.status === 'active' || l.tournament?.status === 'upcoming'
   );
   const pastLeagues = myLeagues.filter((l) => l.tournament?.status === 'completed');
 
-  // Filter tournaments for display
   const upcomingTournaments = tournaments
     .filter((t) => t.status === 'upcoming' || t.status === 'active')
     .slice(0, 6);
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen" style={{ background: '#fffef7' }}>
+      <div className="min-h-screen bg-[var(--cream)]">
         <Navbar />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
@@ -79,15 +77,9 @@ export default function DashboardPage() {
               {/* Main Content */}
               <div className="flex-1 min-w-0">
                 {/* Join League */}
-                <div
-                  className="mb-6 sm:mb-10 p-4 sm:p-5 flex items-center gap-4"
-                  style={{
-                    background: 'linear-gradient(135deg, #006747 0%, #004d35 100%)',
-                    borderRadius: '2px',
-                  }}
-                >
+                <div className="mb-8 sm:mb-10 p-5 sm:p-6 flex items-center gap-4 bg-gradient-to-br from-[var(--masters-green)] to-[var(--masters-green-dark)] rounded-xl shadow-md">
                   <div className="flex-1">
-                    <p className="text-white text-sm font-medium mb-1">Have an invite code?</p>
+                    <p className="text-white text-sm font-medium mb-2">Have an invite code?</p>
                     <div className="flex flex-col sm:flex-row gap-2">
                       <input
                         type="text"
@@ -95,14 +87,12 @@ export default function DashboardPage() {
                         onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
                         placeholder="XXXXXXXX"
                         maxLength={8}
-                        className="w-full sm:w-36 px-3 py-2 text-sm font-mono tracking-widest border-0"
-                        style={{ background: 'rgba(255,255,255,0.95)' }}
+                        className="w-full sm:w-36 px-3 py-2 text-sm font-mono tracking-widest border-0 rounded-lg bg-white/95"
                       />
                       <button
                         onClick={handleJoinLeague}
                         disabled={joinCode.length !== 8}
-                        className="px-4 py-2 text-sm font-medium disabled:opacity-40 transition-opacity"
-                        style={{ background: '#c9a227', color: '#1a1a1a' }}
+                        className="px-4 py-2 text-sm font-medium disabled:opacity-40 transition-all rounded-lg bg-[var(--masters-gold)] text-[var(--charcoal)] hover:brightness-110"
                       >
                         Join League
                       </button>
@@ -111,19 +101,15 @@ export default function DashboardPage() {
                 </div>
 
                 {/* My Leagues */}
-                <section className="mb-6 sm:mb-10">
-                  <div className="flex justify-between items-center mb-4">
-                    <h2
-                      className="text-lg"
-                      style={{ fontFamily: 'Georgia, serif', color: '#1a1a1a' }}
-                    >
+                <section className="mb-8 sm:mb-10">
+                  <div className="flex justify-between items-center mb-5">
+                    <h2 className="text-lg font-display text-[var(--charcoal)]">
                       My Leagues
                     </h2>
                     {user?.is_league_admin && (
                       <Link
                         href="/leagues/create"
-                        className="text-sm font-medium px-4 py-2"
-                        style={{ background: '#006747', color: 'white' }}
+                        className="text-sm font-medium px-4 py-2 rounded-lg bg-[var(--masters-green)] text-white transition-all hover:bg-[var(--masters-green-dark)] hover:shadow-md"
                       >
                         Create League
                       </Link>
@@ -131,52 +117,47 @@ export default function DashboardPage() {
                   </div>
 
                   {activeLeagues.length === 0 && pastLeagues.length === 0 ? (
-                    <p style={{ color: '#666' }}>You haven't joined any leagues yet.</p>
+                    <p className="text-gray-500">You haven&apos;t joined any leagues yet.</p>
                   ) : (
                     <>
                       {/* Active/Upcoming Leagues */}
                       {activeLeagues.length > 0 && (
-                        <div className="space-y-2 mb-4">
+                        <div className="space-y-3 mb-4">
                           {activeLeagues.map((league) => (
                             <Link
                               key={league.id}
                               href={`/leagues/${league.id}`}
-                              className="flex items-center justify-between p-4 transition-all hover:translate-x-1"
+                              className="flex items-center justify-between p-4 bg-white rounded-xl shadow-sm card-hover border-l-[3px]"
                               style={{
-                                background: 'white',
-                                borderLeft:
+                                borderLeftColor:
                                   league.tournament?.status === 'active'
-                                    ? '3px solid #c9a227'
-                                    : '3px solid #006747',
+                                    ? 'var(--masters-gold)'
+                                    : 'var(--masters-green)',
                               }}
                             >
                               <div>
-                                <p className="font-medium" style={{ color: '#1a1a1a' }}>
+                                <p className="font-medium text-[var(--charcoal)]">
                                   {league.name}
                                 </p>
-                                <p className="text-sm" style={{ color: '#666' }}>
+                                <p className="text-sm text-gray-500">
                                   {league.tournament?.name}
                                   {league.tournament?.start_date && (
-                                    <span className="ml-2" style={{ color: '#888' }}>
+                                    <span className="ml-2 text-gray-400">
                                       {format(new Date(league.tournament.start_date), 'MMM d')}
                                     </span>
                                   )}
                                 </p>
                               </div>
                               <div className="text-right">
-                                <span
-                                  className="text-xs uppercase tracking-wide px-2 py-1"
-                                  style={{
-                                    background:
-                                      league.tournament?.status === 'active'
-                                        ? '#c9a227'
-                                        : '#e8f5e9',
-                                    color:
-                                      league.tournament?.status === 'active' ? '#1a1a1a' : '#2e7d32',
-                                  }}
-                                >
-                                  {league.tournament?.status === 'active' ? 'LIVE' : 'UPCOMING'}
-                                </span>
+                                {league.tournament?.status === 'active' ? (
+                                  <span className="text-xs uppercase tracking-wide font-medium px-3 py-1 rounded-full bg-[var(--masters-gold)] text-[var(--charcoal)]">
+                                    LIVE
+                                  </span>
+                                ) : (
+                                  <span className="text-xs uppercase tracking-wide font-medium px-3 py-1 rounded-full bg-green-50 text-green-700">
+                                    UPCOMING
+                                  </span>
+                                )}
                               </div>
                             </Link>
                           ))}
@@ -188,17 +169,15 @@ export default function DashboardPage() {
                         <div>
                           <button
                             onClick={() => setShowPastLeagues(!showPastLeagues)}
-                            className="text-sm flex items-center gap-2 py-2"
-                            style={{ color: '#666' }}
+                            className="text-sm flex items-center gap-2 py-2 text-gray-500 hover:text-gray-700 transition-colors"
                           >
                             <span
+                              className="inline-block transition-transform duration-200"
                               style={{
                                 transform: showPastLeagues ? 'rotate(90deg)' : 'rotate(0)',
-                                transition: 'transform 0.2s',
-                                display: 'inline-block',
                               }}
                             >
-                              ▶
+                              &#9654;
                             </span>
                             Past Leagues ({pastLeagues.length})
                           </button>
@@ -208,22 +187,15 @@ export default function DashboardPage() {
                                 <Link
                                   key={league.id}
                                   href={`/leagues/${league.id}`}
-                                  className="flex items-center justify-between p-4 transition-opacity hover:opacity-80"
-                                  style={{
-                                    background: '#f5f5f5',
-                                    borderLeft: '3px solid #ccc',
-                                  }}
+                                  className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border-l-[3px] border-gray-300 transition-all hover:bg-gray-100"
                                 >
                                   <div>
-                                    <p style={{ color: '#666' }}>{league.name}</p>
-                                    <p className="text-sm" style={{ color: '#888' }}>
+                                    <p className="text-gray-600">{league.name}</p>
+                                    <p className="text-sm text-gray-400">
                                       {league.tournament?.name}
                                     </p>
                                   </div>
-                                  <span
-                                    className="text-xs uppercase"
-                                    style={{ color: '#888' }}
-                                  >
+                                  <span className="text-xs uppercase text-gray-400 font-medium px-3 py-1 rounded-full bg-gray-100">
                                     Completed
                                   </span>
                                 </Link>
@@ -239,30 +211,23 @@ export default function DashboardPage() {
                 {/* Tournaments - For League Admins */}
                 {user?.is_league_admin && (
                   <section>
-                    <h2
-                      className="text-lg mb-4"
-                      style={{ fontFamily: 'Georgia, serif', color: '#1a1a1a' }}
-                    >
+                    <h2 className="text-lg mb-5 font-display text-[var(--charcoal)]">
                       Upcoming Tournaments
                     </h2>
 
                     {upcomingTournaments.length === 0 ? (
-                      <p style={{ color: '#666' }}>No upcoming tournaments.</p>
+                      <p className="text-gray-500">No upcoming tournaments.</p>
                     ) : (
-                      <div className="space-y-1">
-                        {upcomingTournaments.map((tournament) => (
+                      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                        {upcomingTournaments.map((tournament, idx) => (
                           <div
                             key={tournament.id}
-                            className="flex items-center gap-3 p-3"
+                            className="flex items-center gap-4 p-4 transition-colors hover:bg-[var(--cream-dark)]"
                             style={{
-                              background: 'white',
-                              borderBottom: '1px solid #f0f0f0',
+                              borderBottom: idx < upcomingTournaments.length - 1 ? '1px solid #f0ede3' : 'none',
                             }}
                           >
-                            <div
-                              className="text-center w-10 flex-shrink-0"
-                              style={{ color: '#006747' }}
-                            >
+                            <div className="text-center w-10 flex-shrink-0 text-[var(--masters-green)]">
                               <p className="text-xs uppercase">
                                 {tournament.start_date
                                   ? format(new Date(tournament.start_date), 'MMM')
@@ -275,22 +240,18 @@ export default function DashboardPage() {
                               </p>
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="font-medium text-sm sm:text-base" style={{ color: '#1a1a1a' }}>
+                              <p className="font-medium text-sm sm:text-base text-[var(--charcoal)]">
                                 {tournament.name}
                               </p>
                               {tournament.venue && (
-                                <p className="text-sm truncate" style={{ color: '#888' }}>
+                                <p className="text-sm truncate text-gray-400">
                                   {tournament.venue}
                                 </p>
                               )}
                             </div>
                             <Link
                               href={`/leagues/create?tournament=${tournament.id}`}
-                              className="text-xs sm:text-sm px-2 sm:px-3 py-1.5 transition-colors hover:opacity-80 flex-shrink-0"
-                              style={{
-                                background: '#006747',
-                                color: 'white',
-                              }}
+                              className="text-xs sm:text-sm px-3 sm:px-4 py-1.5 rounded-lg bg-[var(--masters-green)] text-white transition-all hover:bg-[var(--masters-green-dark)] hover:shadow-sm flex-shrink-0"
                             >
                               Create League
                             </Link>
@@ -304,63 +265,38 @@ export default function DashboardPage() {
 
               {/* Live Tournament Panel */}
               <aside className="w-full lg:w-72 lg:flex-shrink-0">
-                <div
-                  style={{
-                    background: 'white',
-                    border: '1px solid #e5e2d3',
-                    position: 'sticky',
-                    top: '1rem',
-                  }}
-                >
+                <div className="bg-white rounded-xl shadow-sm border border-[#e5e2d3] overflow-hidden sticky top-4">
                   {liveTournament?.tournament ? (
                     <>
-                      <div
-                        className="px-4 py-3"
-                        style={{
-                          background: '#006747',
-                          borderBottom: '2px solid #c9a227',
-                        }}
-                      >
+                      <div className="px-4 py-3 bg-[var(--masters-green)] border-b-2 border-[var(--masters-gold)]">
                         <div className="flex items-center justify-between">
-                          <span
-                            className="text-xs uppercase tracking-wider"
-                            style={{ color: '#c9a227' }}
-                          >
+                          <span className="text-xs uppercase tracking-wider font-medium text-[var(--masters-gold)]">
                             Live
                           </span>
                           <span className="text-xs text-white/70">
                             Round {liveTournament.current_round}
                           </span>
                         </div>
-                        <p
-                          className="text-white font-medium mt-1"
-                          style={{ fontFamily: 'Georgia, serif' }}
-                        >
+                        <p className="text-white font-medium mt-1 font-display">
                           {liveTournament.tournament.name}
                         </p>
                       </div>
-                      <div className="px-4 py-3">
-                        <p
-                          className="text-xs uppercase tracking-wider mb-3"
-                          style={{ color: '#888' }}
-                        >
+                      <div className="px-4 py-4">
+                        <p className="text-xs uppercase tracking-wider mb-3 text-gray-400">
                           Leaderboard
                         </p>
                         {liveTournament.leaderboard.length > 0 ? (
-                          <div className="space-y-2">
+                          <div className="space-y-2.5">
                             {liveTournament.leaderboard.slice(0, 8).map((entry, idx) => (
                               <div
                                 key={idx}
                                 className="flex items-center justify-between text-sm"
                               >
                                 <div className="flex items-center gap-2">
-                                  <span
-                                    className="w-5 text-center"
-                                    style={{ color: '#888' }}
-                                  >
+                                  <span className="w-5 text-center text-gray-400 text-xs">
                                     {entry.position || idx + 1}
                                   </span>
-                                  <span style={{ color: '#1a1a1a' }}>
+                                  <span className="text-[var(--charcoal)]">
                                     {entry.player_name}
                                   </span>
                                 </div>
@@ -371,24 +307,21 @@ export default function DashboardPage() {
                             ))}
                           </div>
                         ) : (
-                          <p className="text-sm" style={{ color: '#888' }}>
+                          <p className="text-sm text-gray-400">
                             No scores yet
                           </p>
                         )}
                       </div>
-                      <div
-                        className="px-4 py-2 text-xs"
-                        style={{ background: '#fafafa', color: '#888' }}
-                      >
+                      <div className="px-4 py-2.5 text-xs bg-[var(--cream-dark)] text-gray-400 rounded-b-xl">
                         Updates every {config?.sync_interval_minutes ?? 15} min during play
                       </div>
                     </>
                   ) : (
-                    <div className="p-4 text-center">
-                      <p className="text-sm" style={{ color: '#888' }}>
+                    <div className="p-6 text-center">
+                      <p className="text-sm text-gray-400">
                         No tournament in progress
                       </p>
-                      <p className="text-xs mt-1" style={{ color: '#aaa' }}>
+                      <p className="text-xs mt-1 text-gray-300">
                         Check back during tournament days
                       </p>
                     </div>

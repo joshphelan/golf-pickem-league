@@ -26,13 +26,11 @@ function CreateLeagueForm() {
   }, []);
 
   useEffect(() => {
-    // Pre-select tournament from URL parameter
     const preselectedTournament = searchParams.get('tournament');
     if (preselectedTournament && tournaments.length > 0) {
       const tournament = tournaments.find((t) => t.id === preselectedTournament);
       if (tournament) {
         setTournamentId(tournament.id);
-        // Auto-set draft deadline to day before tournament starts
         if (tournament.start_date) {
           const startDate = new Date(tournament.start_date);
           startDate.setDate(startDate.getDate() - 1);
@@ -46,7 +44,6 @@ function CreateLeagueForm() {
   const loadTournaments = async () => {
     try {
       const data = await tournamentAPI.getTournaments();
-      // Filter to only show upcoming/active tournaments
       const availableTournaments = data.filter(
         (t) => t.status === 'upcoming' || t.status === 'active'
       );
@@ -60,7 +57,6 @@ function CreateLeagueForm() {
 
   const handleTournamentChange = (id: string) => {
     setTournamentId(id);
-    // Auto-set draft deadline when tournament is selected
     const tournament = tournaments.find((t) => t.id === id);
     if (tournament?.start_date && !draftDeadline) {
       const startDate = new Date(tournament.start_date);
@@ -94,17 +90,14 @@ function CreateLeagueForm() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen" style={{ background: '#fffef7' }}>
+      <div className="min-h-screen bg-[var(--cream)]">
         <Navbar />
         <div className="max-w-xl mx-auto px-6 py-10">
-          <h1
-            className="text-2xl mb-8"
-            style={{ fontFamily: 'Georgia, serif', color: '#1a1a1a' }}
-          >
+          <h1 className="text-2xl mb-8 font-display text-[var(--charcoal)]">
             Create League
           </h1>
 
-          <div style={{ background: 'white', padding: '2rem' }}>
+          <div className="bg-white rounded-xl shadow-sm p-6 sm:p-8">
             <ErrorMessage message={error} />
 
             {loading ? (
@@ -114,8 +107,7 @@ function CreateLeagueForm() {
                 <div>
                   <label
                     htmlFor="name"
-                    className="block text-xs uppercase tracking-wider mb-2"
-                    style={{ color: '#888' }}
+                    className="block text-xs uppercase tracking-wider mb-2 text-gray-400"
                   >
                     League Name
                   </label>
@@ -126,16 +118,14 @@ function CreateLeagueForm() {
                     onChange={(e) => setName(e.target.value)}
                     required
                     placeholder="e.g., Friends & Family Golf League"
-                    className="w-full px-3 py-2 border text-sm"
-                    style={{ borderColor: '#e5e2d3', outline: 'none' }}
+                    className="w-full px-4 py-2.5 border border-[#e5e2d3] rounded-lg text-sm transition-all"
                   />
                 </div>
 
                 <div>
                   <label
                     htmlFor="tournament"
-                    className="block text-xs uppercase tracking-wider mb-2"
-                    style={{ color: '#888' }}
+                    className="block text-xs uppercase tracking-wider mb-2 text-gray-400"
                   >
                     Tournament
                   </label>
@@ -144,8 +134,7 @@ function CreateLeagueForm() {
                     value={tournamentId}
                     onChange={(e) => handleTournamentChange(e.target.value)}
                     required
-                    className="w-full px-3 py-2 border text-sm"
-                    style={{ borderColor: '#e5e2d3', outline: 'none' }}
+                    className="w-full px-4 py-2.5 border border-[#e5e2d3] rounded-lg text-sm transition-all"
                   >
                     <option value="">Select a tournament</option>
                     {tournaments.map((tournament) => (
@@ -158,7 +147,7 @@ function CreateLeagueForm() {
                     ))}
                   </select>
                   {selectedTournament && (
-                    <p className="mt-2 text-sm" style={{ color: '#666' }}>
+                    <p className="mt-2 text-sm text-gray-500">
                       {selectedTournament.venue && `${selectedTournament.venue} - `}
                       {selectedTournament.start_date &&
                         format(new Date(selectedTournament.start_date), 'MMM d')}{' '}
@@ -172,8 +161,7 @@ function CreateLeagueForm() {
                 <div>
                   <label
                     htmlFor="draftDeadline"
-                    className="block text-xs uppercase tracking-wider mb-2"
-                    style={{ color: '#888' }}
+                    className="block text-xs uppercase tracking-wider mb-2 text-gray-400"
                   >
                     Draft Deadline
                   </label>
@@ -189,8 +177,7 @@ function CreateLeagueForm() {
                         }}
                         required
                         min={new Date().toISOString().split('T')[0]}
-                        className="w-full px-3 py-2 border text-sm"
-                        style={{ borderColor: '#e5e2d3', outline: 'none' }}
+                        className="w-full px-4 py-2.5 border border-[#e5e2d3] rounded-lg text-sm transition-all"
                       />
                     </div>
                     <div>
@@ -203,12 +190,11 @@ function CreateLeagueForm() {
                           setDraftDeadline(`${date}T${e.target.value}`);
                         }}
                         required
-                        className="w-full px-3 py-2 border text-sm"
-                        style={{ borderColor: '#e5e2d3', outline: 'none' }}
+                        className="w-full px-4 py-2.5 border border-[#e5e2d3] rounded-lg text-sm transition-all"
                       />
                     </div>
                   </div>
-                  <p className="mt-1 text-xs" style={{ color: '#888' }}>
+                  <p className="mt-1.5 text-xs text-gray-400">
                     Players must complete their draft before this time
                   </p>
                 </div>
@@ -216,8 +202,7 @@ function CreateLeagueForm() {
                 <div>
                   <label
                     htmlFor="teamSize"
-                    className="block text-xs uppercase tracking-wider mb-2"
-                    style={{ color: '#888' }}
+                    className="block text-xs uppercase tracking-wider mb-2 text-gray-400"
                   >
                     Team Size
                   </label>
@@ -229,10 +214,9 @@ function CreateLeagueForm() {
                     required
                     min="1"
                     max="10"
-                    className="w-24 px-3 py-2 border text-sm"
-                    style={{ borderColor: '#e5e2d3', outline: 'none' }}
+                    className="w-24 px-4 py-2.5 border border-[#e5e2d3] rounded-lg text-sm transition-all"
                   />
-                  <span className="ml-2 text-sm" style={{ color: '#666' }}>
+                  <span className="ml-2 text-sm text-gray-500">
                     golfers per team
                   </span>
                 </div>
@@ -240,8 +224,7 @@ function CreateLeagueForm() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full py-3 text-sm font-medium disabled:opacity-50 transition-opacity"
-                  style={{ background: '#006747', color: 'white' }}
+                  className="w-full py-3 text-sm font-medium disabled:opacity-50 rounded-lg bg-[var(--masters-green)] text-white transition-all hover:bg-[var(--masters-green-dark)] hover:shadow-md"
                 >
                   {submitting ? 'Creating League...' : 'Create League'}
                 </button>

@@ -1,8 +1,17 @@
 # Golf Pick'em League - Roadmap
 
-## Current Session Status (Mar 4, 2026)
+## Current Session Status (Mar 5, 2026)
 
 ### Recently Completed
+- [x] UI modernization pass — rounded corners, shadows, pill badges, card-based layouts, hover effects
+- [x] Typography split — Georgia for display headings, Geist Sans for body/UI
+- [x] Inline styles migrated to Tailwind classes + CSS variables
+- [x] Consistent theme across all pages (home, login, signup, dashboard, league, team, create, about, admin, join)
+- [x] Navbar: shadow, animated mobile menu, pill role badges
+- [x] Draft modal: rounded, backdrop blur, bottom-sheet on mobile
+- [x] Loading spinner branded green, error messages rounded
+
+### Previous Session Fixes
 - [x] Disable FastAPI docs/redoc/openapi endpoints in production
 - [x] Auto-correct stuck tournaments to "completed" on startup
 - [x] Public config endpoint (`/api/config/public`) for dynamic sync interval display
@@ -10,15 +19,10 @@
 - [x] Masters green/gold theme on home, login, signup pages
 - [x] About / How It Works page (`/about`) with Navbar link
 - [x] Past tournaments (Genesis Invitational, Cognizant Classic) no longer stuck as "upcoming"
-
-### Previous Session Fixes
 - [x] API call throttling and playing-hours bug fix
 - [x] Suspense boundary and sync error handling for deployment
+- [x] Mobile responsive UI
 - [x] UI and score display bug fixes
-- [x] Round score bug fix — per-round scores display correctly
-- [x] Mobile text visibility fix
-- [x] Tournament unique constraint for multi-year support
-- [x] Standings auto-detection of latest round
 - [x] Masters/Augusta inspired UI redesign
 - [x] Live tournament sidebar panel
 - [x] League ordering (active first, completed collapsible)
@@ -47,12 +51,12 @@
 
 ## UX / UI Improvements
 
-4. **UI modernization pass**
-   - Current design is too boxy — needs more modern feel
-   - Rounded corners, subtle shadows, better spacing and breathing room
-   - Smoother transitions and hover states
-   - Keep the Masters green/gold/cream color theme
-   - Apply consistently across all pages (dashboard, league, team, create, admin)
+4. **UI redesign / next-level polish**
+   - Revisit overall look and feel — explore bolder design directions
+   - Consider: page transitions/animations, richer card designs, more distinctive visual identity
+   - Potential areas: hero section redesign, leaderboard presentation, dashboard layout
+   - Evaluate adding subtle textures, background patterns, or gradient mesh effects
+   - Use Playwright for visual testing across pages during iteration
 
 5. **About page — clarify user roles and sign-up flow**
    - Explain that signing up gives you the ability to **join** leagues (via invite code), but not create them

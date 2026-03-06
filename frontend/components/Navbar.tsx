@@ -23,15 +23,12 @@ export default function Navbar() {
   if (!user) return null;
 
   return (
-    <nav className="masters-header">
+    <nav className="masters-header shadow-lg">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <div className="flex justify-between items-center h-14">
           <div className="flex items-center space-x-8">
             <Link href="/dashboard" className="flex items-center">
-              <span
-                className="text-lg tracking-widest text-white"
-                style={{ fontFamily: 'Georgia, serif', fontWeight: 400 }}
-              >
+              <span className="text-lg tracking-widest text-white font-display">
                 <span className="hidden sm:inline">GOLF </span>PICK&apos;EM
               </span>
             </Link>
@@ -61,18 +58,12 @@ export default function Navbar() {
           <div className="hidden md:flex items-center space-x-4">
             <span className="text-white/70 text-sm">{user.username}</span>
             {user.is_owner && (
-              <span
-                className="px-2 py-0.5 text-xs tracking-wide"
-                style={{ background: '#c9a227', color: '#1a1a1a' }}
-              >
+              <span className="px-2.5 py-0.5 text-xs font-medium tracking-wide rounded-full bg-[var(--masters-gold)] text-[var(--charcoal)]">
                 OWNER
               </span>
             )}
             {user.is_league_admin && !user.is_owner && (
-              <span
-                className="px-2 py-0.5 text-xs tracking-wide"
-                style={{ background: '#c9a227', color: '#1a1a1a' }}
-              >
+              <span className="px-2.5 py-0.5 text-xs font-medium tracking-wide rounded-full bg-[var(--masters-gold)] text-[var(--charcoal)]">
                 ADMIN
               </span>
             )}
@@ -101,8 +92,14 @@ export default function Navbar() {
         </div>
 
         {/* Mobile menu dropdown */}
-        {menuOpen && (
-          <div className="md:hidden pb-4 border-t border-white/10">
+        <div
+          className="md:hidden overflow-hidden transition-all duration-300 ease-in-out"
+          style={{
+            maxHeight: menuOpen ? '300px' : '0',
+            opacity: menuOpen ? 1 : 0,
+          }}
+        >
+          <div className="pb-4 border-t border-white/10">
             <div className="pt-3 space-y-1">
               <Link
                 href="/dashboard"
@@ -132,18 +129,12 @@ export default function Navbar() {
               <div className="flex items-center gap-2">
                 <span className="text-white/70 text-sm">{user.username}</span>
                 {user.is_owner && (
-                  <span
-                    className="px-2 py-0.5 text-xs tracking-wide"
-                    style={{ background: '#c9a227', color: '#1a1a1a' }}
-                  >
+                  <span className="px-2.5 py-0.5 text-xs font-medium tracking-wide rounded-full bg-[var(--masters-gold)] text-[var(--charcoal)]">
                     OWNER
                   </span>
                 )}
                 {user.is_league_admin && !user.is_owner && (
-                  <span
-                    className="px-2 py-0.5 text-xs tracking-wide"
-                    style={{ background: '#c9a227', color: '#1a1a1a' }}
-                  >
+                  <span className="px-2.5 py-0.5 text-xs font-medium tracking-wide rounded-full bg-[var(--masters-gold)] text-[var(--charcoal)]">
                     ADMIN
                   </span>
                 )}
@@ -156,7 +147,7 @@ export default function Navbar() {
               </button>
             </div>
           </div>
-        )}
+        </div>
       </div>
     </nav>
   );

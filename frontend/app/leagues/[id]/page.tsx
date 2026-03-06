@@ -123,7 +123,7 @@ export default function LeagueDetailsPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen" style={{ background: '#fffef7' }}>
+      <div className="min-h-screen bg-[var(--cream)]">
         <Navbar />
 
         {loading ? (
@@ -135,37 +135,23 @@ export default function LeagueDetailsPage() {
         ) : (
           <>
             {/* Tournament Header */}
-            <div
-              style={{
-                background: 'linear-gradient(135deg, #006747 0%, #004d35 100%)',
-                borderBottom: '3px solid #c9a227',
-              }}
-            >
-              <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
+            <div className="bg-gradient-to-br from-[var(--masters-green)] to-[var(--masters-green-dark)] border-b-[3px] border-[var(--masters-gold)]">
+              <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                   <div>
-                    <div className="flex items-center gap-3 mb-2">
+                    <div className="flex items-center gap-3 mb-3">
                       {tournamentStatus === 'active' && (
-                        <span
-                          className="text-xs uppercase tracking-wider px-2 py-0.5"
-                          style={{ background: '#c9a227', color: '#1a1a1a' }}
-                        >
+                        <span className="text-xs uppercase tracking-wider font-medium px-3 py-1 rounded-full bg-[var(--masters-gold)] text-[var(--charcoal)]">
                           Live - Round {currentRound}
                         </span>
                       )}
                       {tournamentStatus === 'upcoming' && (
-                        <span
-                          className="text-xs uppercase tracking-wider px-2 py-0.5"
-                          style={{ background: 'rgba(255,255,255,0.2)', color: 'white' }}
-                        >
+                        <span className="text-xs uppercase tracking-wider font-medium px-3 py-1 rounded-full bg-white/20 text-white">
                           Upcoming
                         </span>
                       )}
                     </div>
-                    <h1
-                      className="text-2xl text-white mb-1"
-                      style={{ fontFamily: 'Georgia, serif' }}
-                    >
+                    <h1 className="text-2xl text-white mb-1 font-display">
                       {league.name}
                     </h1>
                     <p className="text-white/70 text-sm">
@@ -182,8 +168,7 @@ export default function LeagueDetailsPage() {
                   {userTeam && (
                     <Link
                       href={`/teams/${userTeam.team_id}`}
-                      className="px-5 py-2 text-sm font-medium"
-                      style={{ background: '#c9a227', color: '#1a1a1a' }}
+                      className="px-5 py-2 text-sm font-medium rounded-lg bg-[var(--masters-gold)] text-[var(--charcoal)] transition-all hover:brightness-110 hover:shadow-md"
                     >
                       My Team
                     </Link>
@@ -192,43 +177,36 @@ export default function LeagueDetailsPage() {
               </div>
             </div>
 
-            <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+            <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
               <ErrorMessage message={error} />
               {successMessage && (
-                <div
-                  className="mb-4 px-4 py-2 text-sm"
-                  style={{ background: '#e8f5e9', color: '#2e7d32' }}
-                >
+                <div className="mb-4 px-4 py-2.5 text-sm bg-green-50 text-green-700 rounded-xl">
                   {successMessage}
                 </div>
               )}
 
               {/* Info Bar */}
-              <div
-                className="flex flex-wrap items-center gap-6 mb-6 pb-5"
-                style={{ borderBottom: '1px solid #e5e2d3' }}
-              >
+              <div className="flex flex-wrap items-center gap-6 mb-6 pb-5 border-b border-[#e5e2d3]">
                 <div>
-                  <p className="text-xs uppercase tracking-wider" style={{ color: '#888' }}>
+                  <p className="text-xs uppercase tracking-wider text-gray-400">
                     Draft Deadline
                   </p>
-                  <p className="text-sm" style={{ color: '#1a1a1a' }}>
+                  <p className="text-sm text-[var(--charcoal)]">
                     {format(new Date(league.draft_deadline), 'MMM d, h:mm a')}
                   </p>
                 </div>
 
                 <div>
-                  <p className="text-xs uppercase tracking-wider" style={{ color: '#888' }}>
+                  <p className="text-xs uppercase tracking-wider text-gray-400">
                     Invite Code
                   </p>
                   <button
                     onClick={copyInviteCode}
-                    className="flex items-center gap-2 text-sm font-mono tracking-wider transition-colors"
-                    style={{ color: '#006747' }}
+                    className="flex items-center gap-2 text-sm font-mono tracking-wider text-[var(--masters-green)] transition-colors"
                   >
                     {league.invite_code}
                     <span
-                      className="text-xs px-1.5 py-0.5"
+                      className="text-xs px-2 py-0.5 rounded-full transition-colors"
                       style={{
                         background: copied ? '#e8f5e9' : '#f5f5f5',
                         color: copied ? '#2e7d32' : '#888',
@@ -246,8 +224,7 @@ export default function LeagueDetailsPage() {
                     <button
                       onClick={handleSyncScores}
                       disabled={syncing}
-                      className="px-4 py-1.5 text-sm font-medium disabled:opacity-50 transition-opacity"
-                      style={{ background: '#006747', color: 'white' }}
+                      className="px-4 py-1.5 text-sm font-medium disabled:opacity-50 rounded-lg bg-[var(--masters-green)] text-white transition-all hover:bg-[var(--masters-green-dark)] hover:shadow-sm"
                     >
                       {syncing ? 'Syncing...' : 'Sync Scores'}
                     </button>
@@ -255,8 +232,7 @@ export default function LeagueDetailsPage() {
                       <button
                         onClick={handleRefreshPlayers}
                         disabled={refreshing}
-                        className="px-4 py-1.5 text-sm disabled:opacity-50"
-                        style={{ background: '#e5e2d3', color: '#1a1a1a' }}
+                        className="px-4 py-1.5 text-sm disabled:opacity-50 rounded-lg bg-[var(--cream-dark)] text-[var(--charcoal)] transition-all hover:bg-[#ebe8da]"
                       >
                         {refreshing ? 'Refreshing...' : 'Refresh Field'}
                       </button>
@@ -267,13 +243,10 @@ export default function LeagueDetailsPage() {
 
               {/* Update Notice */}
               {tournamentStatus === 'active' && (
-                <div
-                  className="mb-6 px-4 py-2 text-xs"
-                  style={{ background: '#f5f3e7', color: '#666' }}
-                >
+                <div className="mb-6 px-4 py-2.5 text-xs bg-[var(--cream-dark)] text-gray-500 rounded-lg">
                   Scores update every {syncInterval} minutes during active tournament hours ({formatHour(hoursStart)} - {formatHour(hoursEnd)} local time)
                   {standingsData?.last_score_sync && (
-                    <span className="ml-3" style={{ color: '#888' }}>
+                    <span className="ml-3 text-gray-400">
                       Last refresh: {format(new Date(standingsData.last_score_sync), 'h:mm a')}
                     </span>
                   )}
@@ -282,37 +255,26 @@ export default function LeagueDetailsPage() {
 
               {/* Leaderboard */}
               <div className="mb-4 flex items-center justify-between">
-                <h2
-                  className="text-lg"
-                  style={{ fontFamily: 'Georgia, serif', color: '#1a1a1a' }}
-                >
+                <h2 className="text-lg font-display text-[var(--charcoal)]">
                   Leaderboard
                 </h2>
                 {currentRound > 0 && (
-                  <span className="text-sm" style={{ color: '#888' }}>
+                  <span className="text-sm text-gray-400">
                     Through Round {currentRound}
                   </span>
                 )}
               </div>
 
               {standings.length === 0 ? (
-                <div
-                  className="text-center py-12"
-                  style={{ background: 'white', color: '#666' }}
-                >
+                <div className="text-center py-12 bg-white rounded-xl text-gray-500">
                   No teams have drafted players yet.
                 </div>
               ) : (
-                <div style={{ background: 'white' }}>
+                <div className="bg-white rounded-xl shadow-sm overflow-hidden">
                   {/* Header */}
                   <div
-                    className="standings-grid grid gap-4 px-3 sm:px-4 py-3 text-xs uppercase tracking-wider"
-                    style={{
-                      gridTemplateColumns: '3rem 1fr auto 5rem',
-                      background: '#006747',
-                      color: 'white',
-                      borderBottom: '2px solid #c9a227',
-                    }}
+                    className="standings-grid grid gap-4 px-4 sm:px-5 py-3 text-xs uppercase tracking-wider bg-[var(--masters-green)] text-white border-b-2 border-[var(--masters-gold)]"
+                    style={{ gridTemplateColumns: '3rem 1fr auto 5rem' }}
                   >
                     <span>Pos</span>
                     <span>Team</span>
@@ -324,21 +286,19 @@ export default function LeagueDetailsPage() {
                   {standings.map((standing, idx) => (
                     <div
                       key={standing.team_id}
-                      className="standings-grid grid gap-4 px-3 sm:px-4 py-3 sm:py-4 items-center transition-colors"
+                      className="standings-grid grid gap-4 px-4 sm:px-5 py-4 sm:py-5 items-center transition-colors hover:bg-[var(--cream-dark)]"
                       style={{
                         gridTemplateColumns: '3rem 1fr auto 5rem',
-                        borderBottom: '1px solid #f0f0f0',
-                        background: idx % 2 === 0 ? 'white' : '#fafafa',
+                        borderBottom: idx < standings.length - 1 ? '1px solid #f0ede3' : 'none',
                       }}
                     >
-                      <span className="font-semibold" style={{ color: '#1a1a1a' }}>
+                      <span className="font-semibold text-[var(--charcoal)]">
                         {standing.rank || '-'}
                       </span>
                       <div className="min-w-0">
                         <Link
                           href={`/teams/${standing.team_id}`}
-                          className="font-medium hover:underline truncate block"
-                          style={{ color: '#006747' }}
+                          className="font-medium hover:underline truncate block text-[var(--masters-green)]"
                         >
                           {standing.team_name}
                         </Link>
@@ -346,8 +306,7 @@ export default function LeagueDetailsPage() {
                           {standing.players.map((player) => (
                             <span
                               key={player.player_id}
-                              className="text-sm"
-                              style={{ color: '#888' }}
+                              className="text-sm text-gray-400"
                             >
                               {player.name.split(' ').pop()}{' '}
                               <span style={getScoreStyle(player.score)}>
@@ -357,7 +316,7 @@ export default function LeagueDetailsPage() {
                           ))}
                         </div>
                       </div>
-                      <span className="hide-mobile text-sm" style={{ color: '#666' }}>
+                      <span className="hide-mobile text-sm text-gray-500">
                         {standing.owner_name}
                       </span>
                       <span

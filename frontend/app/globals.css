@@ -4,6 +4,7 @@
   /* Masters / Augusta National inspired palette */
   --masters-green: #006747;
   --masters-green-dark: #004d35;
+  --masters-green-light: #00875e;
   --masters-gold: #c9a227;
   --masters-gold-light: #d4b84a;
   --cream: #fffef7;
@@ -23,13 +24,25 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-masters-green: var(--masters-green);
+  --color-masters-green-dark: var(--masters-green-dark);
+  --color-masters-gold: var(--masters-gold);
+  --color-masters-gold-light: var(--masters-gold-light);
+  --color-cream: var(--cream);
+  --color-cream-dark: var(--cream-dark);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: 'Georgia', 'Times New Roman', serif;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+/* Display font for headings */
+.font-display {
   font-family: 'Georgia', 'Times New Roman', serif;
 }
 
@@ -101,11 +114,13 @@ body {
   font-weight: 500;
   letter-spacing: 0.025em;
   border: none;
-  transition: background 0.2s;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
 }
 
 .btn-masters:hover {
   background: var(--masters-green-dark);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 /* Tournament banner */
@@ -123,6 +138,23 @@ body {
   font-weight: 400;
   letter-spacing: 0.05em;
   margin: 0;
+}
+
+/* Card hover lift effect */
+.card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1), 0 4px 10px -6px rgba(0, 0, 0, 0.05);
+}
+
+/* Smooth focus ring for inputs */
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--masters-green) !important;
+  box-shadow: 0 0 0 3px rgba(0, 103, 71, 0.1);
 }
 
 /* Mobile-responsive leaderboard grid */

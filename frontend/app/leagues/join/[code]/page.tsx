@@ -31,24 +31,24 @@ export default function JoinLeaguePage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-[var(--cream)]">
         <Navbar />
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-8">Join League</h1>
+          <h1 className="text-2xl font-display text-[var(--charcoal)] mb-8">Join League</h1>
 
-          <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-200">
+          <div className="bg-white p-8 rounded-xl shadow-sm border border-[#e5e2d3]">
             <ErrorMessage message={error} />
 
             <div className="text-center">
-              <p className="text-gray-600 mb-6">
-                You're about to join a league with invite code:
+              <p className="text-gray-500 mb-6">
+                You&apos;re about to join a league with invite code:
               </p>
-              <p className="text-2xl font-mono font-bold text-blue-600 mb-8">{code}</p>
+              <p className="text-2xl font-mono font-bold text-[var(--masters-green)] mb-8">{code}</p>
 
               <button
                 onClick={handleJoin}
                 disabled={loading}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-8 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                className="font-medium py-3 px-8 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed bg-[var(--masters-green)] text-white transition-all hover:bg-[var(--masters-green-dark)] hover:shadow-md"
               >
                 {loading ? 'Joining...' : 'Join League'}
               </button>
@@ -59,4 +59,3 @@ export default function JoinLeaguePage() {
     </ProtectedRoute>
   );
 }
-

@@ -5,19 +5,19 @@ interface ErrorMessageProps {
 export default function ErrorMessage({ message }: ErrorMessageProps) {
   if (!message) return null;
 
-  // Handle string errors
+  const baseClasses = "bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4";
+
   if (typeof message === 'string') {
     return (
-      <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+      <div className={baseClasses}>
         <p className="text-sm">{message}</p>
       </div>
     );
   }
 
-  // Handle structured errors (Pydantic validation errors)
   if (Array.isArray(message)) {
     return (
-      <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+      <div className={baseClasses}>
         {message.map((err, idx) => (
           <p key={idx} className="text-sm mb-1">
             {err.msg || JSON.stringify(err)}
@@ -27,10 +27,9 @@ export default function ErrorMessage({ message }: ErrorMessageProps) {
     );
   }
 
-  // Handle object errors
   if (typeof message === 'object') {
     return (
-      <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+      <div className={baseClasses}>
         <p className="text-sm">{message.msg || message.detail || JSON.stringify(message)}</p>
       </div>
     );
@@ -38,4 +37,3 @@ export default function ErrorMessage({ message }: ErrorMessageProps) {
 
   return null;
 }
-

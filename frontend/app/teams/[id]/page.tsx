@@ -129,7 +129,7 @@ export default function TeamDetailsPage() {
   if (loading) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen" style={{ background: '#fffef7' }}>
+        <div className="min-h-screen bg-[var(--cream)]">
           <Navbar />
           <LoadingSpinner />
         </div>
@@ -140,7 +140,7 @@ export default function TeamDetailsPage() {
   if (!team) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen" style={{ background: '#fffef7' }}>
+        <div className="min-h-screen bg-[var(--cream)]">
           <Navbar />
           <div className="max-w-4xl mx-auto px-6 py-10">
             <ErrorMessage message="Team not found" />
@@ -157,7 +157,7 @@ export default function TeamDetailsPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen" style={{ background: '#fffef7' }}>
+      <div className="min-h-screen bg-[var(--cream)]">
         <Navbar />
 
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
@@ -165,19 +165,15 @@ export default function TeamDetailsPage() {
           <div className="mb-6">
             <Link
               href={`/leagues/${team.league_id}`}
-              className="text-sm hover:underline inline-flex items-center gap-1"
-              style={{ color: '#006747' }}
+              className="text-sm text-[var(--masters-green)] hover:underline inline-flex items-center gap-1"
             >
-              <span>←</span> Back to League
+              <span>&larr;</span> Back to League
             </Link>
-            <h1
-              className="text-2xl mt-2"
-              style={{ fontFamily: 'Georgia, serif', color: '#1a1a1a' }}
-            >
+            <h1 className="text-2xl mt-2 font-display text-[var(--charcoal)]">
               {team.name}
             </h1>
             {lastUpdated && (
-              <p className="text-xs mt-1" style={{ color: '#888' }}>
+              <p className="text-xs mt-1 text-gray-400">
                 Updated {format(lastUpdated, 'h:mm a')}
               </p>
             )}
@@ -185,51 +181,32 @@ export default function TeamDetailsPage() {
 
           <ErrorMessage message={error} />
           {successMessage && (
-            <div
-              className="mb-4 px-4 py-2 text-sm"
-              style={{ background: '#e8f5e9', color: '#2e7d32' }}
-            >
+            <div className="mb-4 px-4 py-2.5 text-sm bg-green-50 text-green-700 rounded-xl">
               {successMessage}
             </div>
           )}
 
           {/* Team Score Card */}
-          <div
-            className="mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
-            style={{
-              background: 'linear-gradient(135deg, #006747 0%, #004d35 100%)',
-              padding: '1.5rem',
-            }}
-          >
+          <div className="mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-gradient-to-br from-[var(--masters-green)] to-[var(--masters-green-dark)] p-6 rounded-xl shadow-md">
             <div>
-              <p
-                className="text-xs uppercase tracking-widest mb-1"
-                style={{ color: 'rgba(255,255,255,0.7)' }}
-              >
+              <p className="text-xs uppercase tracking-widest mb-1 text-white/70">
                 Total Score
               </p>
-              <p
-                className="text-4xl"
-                style={{ fontFamily: 'Georgia, serif', color: 'white' }}
-              >
+              <p className="text-4xl font-display text-white">
                 {formatScore(team.total_score)}
               </p>
             </div>
             <div className="text-right">
-              <p
-                className="text-xs uppercase tracking-widest mb-1"
-                style={{ color: 'rgba(255,255,255,0.7)' }}
-              >
+              <p className="text-xs uppercase tracking-widest mb-1 text-white/70">
                 Roster
               </p>
-              <p className="text-lg" style={{ color: 'white' }}>
+              <p className="text-lg text-white">
                 {draftedCount} / {maxPlayers}
               </p>
               {canDraft && (
                 <button
                   onClick={openDraftModal}
-                  className="mt-2 px-4 py-1.5 text-sm font-medium"
-                  style={{ background: '#c9a227', color: '#1a1a1a' }}
+                  className="mt-2 px-4 py-1.5 text-sm font-medium rounded-lg bg-[var(--masters-gold)] text-[var(--charcoal)] transition-all hover:brightness-110 hover:shadow-md"
                 >
                   Draft Player
                 </button>
@@ -239,22 +216,16 @@ export default function TeamDetailsPage() {
 
           {/* Roster Table */}
           {draftedCount === 0 ? (
-            <div
-              className="text-center py-12"
-              style={{ background: 'white', color: '#666' }}
-            >
-              No players drafted yet. Click "Draft Player" to build your team.
+            <div className="text-center py-12 bg-white rounded-xl text-gray-500">
+              No players drafted yet. Click &quot;Draft Player&quot; to build your team.
             </div>
           ) : (
-            <div style={{ background: 'white' }}>
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
               {/* Header */}
               <div
-                className={`roster-grid${isOwner ? ' has-actions' : ''} grid gap-2 px-3 sm:px-4 py-3 text-xs uppercase tracking-wider`}
+                className={`roster-grid${isOwner ? ' has-actions' : ''} grid gap-2 px-4 sm:px-5 py-3 text-xs uppercase tracking-wider bg-[var(--masters-green)] text-white border-b-2 border-[var(--masters-gold)]`}
                 style={{
                   gridTemplateColumns: '1fr repeat(4, 4rem) 5rem' + (isOwner ? ' 4rem' : ''),
-                  background: '#006747',
-                  color: 'white',
-                  borderBottom: '2px solid #c9a227',
                 }}
               >
                 <span>Player</span>
@@ -270,14 +241,13 @@ export default function TeamDetailsPage() {
               {team.players?.map((teamPlayer, idx) => (
                 <div
                   key={teamPlayer.id}
-                  className={`roster-grid${isOwner ? ' has-actions' : ''} grid gap-2 px-3 sm:px-4 py-3 sm:py-4 items-center`}
+                  className={`roster-grid${isOwner ? ' has-actions' : ''} grid gap-2 px-4 sm:px-5 py-4 sm:py-5 items-center transition-colors hover:bg-[var(--cream-dark)]`}
                   style={{
                     gridTemplateColumns: '1fr repeat(4, 4rem) 5rem' + (isOwner ? ' 4rem' : ''),
-                    borderBottom: '1px solid #f0f0f0',
-                    background: idx % 2 === 0 ? 'white' : '#fafafa',
+                    borderBottom: idx < (team.players?.length || 0) - 1 ? '1px solid #f0ede3' : 'none',
                   }}
                 >
-                  <span className="font-medium truncate" style={{ color: '#1a1a1a' }}>
+                  <span className="font-medium truncate text-[var(--charcoal)]">
                     {teamPlayer.player.full_name}
                   </span>
                   <span className="hide-mobile text-center" style={getScoreStyle(teamPlayer.scores?.round_1)}>
@@ -301,8 +271,7 @@ export default function TeamDetailsPage() {
                   {isOwner && (
                     <button
                       onClick={() => handleUndraftPlayer(teamPlayer.player.id)}
-                      className="text-sm text-right"
-                      style={{ color: '#c41e3a' }}
+                      className="text-sm text-right text-red-500 hover:text-red-700 transition-colors"
                     >
                       Remove
                     </button>
@@ -315,31 +284,22 @@ export default function TeamDetailsPage() {
 
         {/* Draft Modal */}
         {showDraftModal && (
-          <div
-            className="fixed inset-0 flex items-center justify-center p-4 z-50"
-            style={{ background: 'rgba(0,0,0,0.6)' }}
-          >
-            <div
-              className="w-full max-w-lg max-h-[80vh] overflow-hidden"
-              style={{ background: '#fffef7' }}
-            >
-              <div
-                className="px-5 py-4 flex justify-between items-center"
-                style={{ background: '#006747', borderBottom: '2px solid #c9a227' }}
-              >
+          <div className="fixed inset-0 flex items-end sm:items-center justify-center p-0 sm:p-4 z-50 bg-black/50 backdrop-blur-sm">
+            <div className="w-full sm:max-w-lg sm:max-h-[80vh] max-h-[90vh] overflow-hidden bg-[var(--cream)] rounded-t-2xl sm:rounded-2xl shadow-2xl">
+              <div className="px-5 py-4 flex justify-between items-center bg-[var(--masters-green)] border-b-2 border-[var(--masters-gold)] sm:rounded-t-2xl">
                 <div>
-                  <h2 className="text-lg text-white" style={{ fontFamily: 'Georgia, serif' }}>
+                  <h2 className="text-lg text-white font-display">
                     Draft Player
                   </h2>
-                  <p className="text-sm" style={{ color: 'rgba(255,255,255,0.7)' }}>
+                  <p className="text-sm text-white/70">
                     {maxPlayers - draftedCount} slot{maxPlayers - draftedCount !== 1 ? 's' : ''} remaining
                   </p>
                 </div>
                 <button
                   onClick={() => setShowDraftModal(false)}
-                  className="text-white/70 hover:text-white text-2xl leading-none"
+                  className="text-white/70 hover:text-white text-2xl leading-none transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10"
                 >
-                  ×
+                  &times;
                 </button>
               </div>
 
@@ -349,13 +309,12 @@ export default function TeamDetailsPage() {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search players..."
-                  className="w-full px-4 py-2.5 border text-sm mb-4"
-                  style={{ borderColor: '#e5e2d3', outline: 'none' }}
+                  className="w-full px-4 py-2.5 border border-[#e5e2d3] rounded-lg text-sm mb-4"
                 />
 
                 <div className="overflow-y-auto max-h-[50vh]">
                   {filteredPlayers.length === 0 ? (
-                    <p className="text-center py-8" style={{ color: '#888' }}>
+                    <p className="text-center py-8 text-gray-400">
                       No available players found.
                     </p>
                   ) : (
@@ -363,18 +322,18 @@ export default function TeamDetailsPage() {
                       {filteredPlayers.map((player, index) => (
                         <div
                           key={player.player_id}
-                          className="flex justify-between items-center py-3 px-2"
+                          className="flex justify-between items-center py-3 px-2 rounded-lg hover:bg-white transition-colors"
                           style={{
                             borderBottom:
-                              index < filteredPlayers.length - 1 ? '1px solid #f0f0f0' : 'none',
+                              index < filteredPlayers.length - 1 ? '1px solid #f0ede3' : 'none',
                           }}
                         >
                           <div>
-                            <p className="font-medium" style={{ color: '#1a1a1a' }}>
+                            <p className="font-medium text-[var(--charcoal)]">
                               {player.first_name} {player.last_name}
                             </p>
                             {player.is_amateur && (
-                              <span className="text-xs" style={{ color: '#888' }}>
+                              <span className="text-xs text-gray-400">
                                 Amateur
                               </span>
                             )}
@@ -382,8 +341,7 @@ export default function TeamDetailsPage() {
                           <button
                             onClick={() => handleDraftPlayer(player.id)}
                             disabled={drafting}
-                            className="px-4 py-1.5 text-sm font-medium disabled:opacity-50"
-                            style={{ background: '#006747', color: 'white' }}
+                            className="px-4 py-1.5 text-sm font-medium disabled:opacity-50 rounded-lg bg-[var(--masters-green)] text-white transition-all hover:bg-[var(--masters-green-dark)] hover:shadow-sm"
                           >
                             {drafting ? '...' : 'Draft'}
                           </button>

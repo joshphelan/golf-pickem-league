@@ -28,14 +28,13 @@ export default function AdminUsersPage() {
   const [processingUserId, setProcessingUserId] = useState<string | null>(null);
   const currentUser = getUser();
 
-  // Check if user is owner
   if (!currentUser?.is_owner) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-[var(--cream)]">
           <Navbar />
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">
               <p>You do not have permission to access this page. Owner access required.</p>
             </div>
           </div>
@@ -66,11 +65,9 @@ export default function AdminUsersPage() {
 
     try {
       if (currentValue) {
-        // Revoke league admin
         await api.patch(`/auth/admin/users/${userId}/revoke-league-admin`);
         setSuccessMessage('League admin revoked successfully');
       } else {
-        // Grant league admin
         await api.patch(`/auth/admin/users/${userId}/grant-league-admin`);
         setSuccessMessage('League admin granted successfully');
       }
@@ -90,11 +87,9 @@ export default function AdminUsersPage() {
 
     try {
       if (currentValue) {
-        // Revoke owner
         await api.patch(`/auth/admin/users/${userId}/revoke-owner`);
         setSuccessMessage('Owner revoked successfully');
       } else {
-        // Grant owner
         await api.patch(`/auth/admin/users/${userId}/grant-owner`);
         setSuccessMessage('Owner granted successfully');
       }
@@ -109,15 +104,15 @@ export default function AdminUsersPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-[var(--cream)]">
         <Navbar />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-8">Owner Portal</h1>
-          <p className="text-gray-600 mb-6">Manage user permissions and access levels</p>
+          <h1 className="text-2xl font-display text-[var(--charcoal)] mb-2">Owner Portal</h1>
+          <p className="text-gray-500 mb-8">Manage user permissions and access levels</p>
 
           <ErrorMessage message={error} />
           {successMessage && (
-            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4">
+            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4">
               <p>{successMessage}</p>
             </div>
           )}
@@ -125,38 +120,38 @@ export default function AdminUsersPage() {
           {loading ? (
             <LoadingSpinner />
           ) : (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-white rounded-xl shadow-sm border border-[#e5e2d3] overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <table className="min-w-full divide-y divide-[#e5e2d3]">
+                  <thead>
+                    <tr className="bg-[var(--cream-dark)]">
+                      <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                         User
                       </th>
-                      <th className="hidden md:table-cell px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="hidden md:table-cell px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                         Email
                       </th>
-                      <th className="hidden md:table-cell px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="hidden md:table-cell px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                         Joined
                       </th>
-                      <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                         Permissions
                       </th>
-                      <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                         Actions
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="bg-white divide-y divide-[#f0ede3]">
                     {users.map((user) => {
                       const isCurrentUser = user.id === currentUser?.id;
                       const isProcessing = processingUserId === user.id;
 
                       return (
-                        <tr key={user.id} className={isCurrentUser ? 'bg-blue-50' : ''}>
+                        <tr key={user.id} className={isCurrentUser ? 'bg-blue-50/50' : 'hover:bg-[var(--cream-dark)] transition-colors'}>
                           <td className="px-3 md:px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
-                              <div className="text-sm font-medium text-gray-900">
+                              <div className="text-sm font-medium text-[var(--charcoal)]">
                                 {user.username}
                                 {isCurrentUser && (
                                   <span className="ml-2 text-xs text-blue-600">(You)</span>
@@ -165,30 +160,30 @@ export default function AdminUsersPage() {
                             </div>
                           </td>
                           <td className="hidden md:table-cell px-3 md:px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-600">{user.email}</div>
+                            <div className="text-sm text-gray-500">{user.email}</div>
                           </td>
-                          <td className="hidden md:table-cell px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          <td className="hidden md:table-cell px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {format(new Date(user.created_at), 'MMM d, yyyy')}
                           </td>
                           <td className="px-3 md:px-6 py-4 whitespace-nowrap">
                             <div className="flex flex-wrap gap-1">
                               {user.is_primary_owner && (
-                                <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded">
+                                <span className="px-2.5 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded-full">
                                   Primary Owner
                                 </span>
                               )}
                               {user.is_owner && !user.is_primary_owner && (
-                                <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-700 rounded">
+                                <span className="px-2.5 py-1 text-xs font-medium bg-purple-100 text-purple-700 rounded-full">
                                   Owner
                                 </span>
                               )}
                               {user.is_league_admin && !user.is_owner && (
-                                <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded">
+                                <span className="px-2.5 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
                                   League Admin
                                 </span>
                               )}
                               {!user.is_league_admin && !user.is_owner && (
-                                <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded">
+                                <span className="px-2.5 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">
                                   User
                                 </span>
                               )}
@@ -201,19 +196,17 @@ export default function AdminUsersPage() {
                               <span className="text-gray-400 italic">Cannot modify self</span>
                             ) : (
                               <div className="flex flex-col space-y-2">
-                                {/* League Admin Toggle */}
                                 <label className="flex items-center">
                                   <input
                                     type="checkbox"
                                     checked={user.is_league_admin}
                                     onChange={() => toggleLeagueAdmin(user.id, user.is_league_admin)}
                                     disabled={isProcessing}
-                                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded disabled:opacity-50"
+                                    className="h-4 w-4 text-[var(--masters-green)] focus:ring-[var(--masters-green)] border-gray-300 rounded disabled:opacity-50"
                                   />
-                                  <span className="ml-2 text-gray-700">League Admin</span>
+                                  <span className="ml-2 text-gray-600">League Admin</span>
                                 </label>
 
-                                {/* Owner Toggle */}
                                 <label className="flex items-center">
                                   <input
                                     type="checkbox"
@@ -222,7 +215,7 @@ export default function AdminUsersPage() {
                                     disabled={isProcessing}
                                     className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded disabled:opacity-50"
                                   />
-                                  <span className="ml-2 text-gray-700">Owner</span>
+                                  <span className="ml-2 text-gray-600">Owner</span>
                                 </label>
                               </div>
                             )}
@@ -235,12 +228,12 @@ export default function AdminUsersPage() {
               </div>
 
               {users.length === 0 && (
-                <div className="px-6 py-4 text-center text-gray-500">No users found.</div>
+                <div className="px-6 py-4 text-center text-gray-400">No users found.</div>
               )}
             </div>
           )}
 
-          <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="mt-6 bg-blue-50 border border-blue-200 rounded-xl p-5">
             <h3 className="text-sm font-medium text-blue-900 mb-2">Permission Levels:</h3>
             <ul className="text-sm text-blue-800 space-y-1">
               <li>
@@ -263,4 +256,3 @@ export default function AdminUsersPage() {
     </ProtectedRoute>
   );
 }
-

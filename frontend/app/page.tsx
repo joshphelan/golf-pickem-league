@@ -15,37 +15,27 @@ export default function HomePage() {
   }, [router]);
 
   return (
-    <div className="min-h-screen" style={{ background: '#fffef7' }}>
+    <div className="min-h-screen bg-[var(--cream)]">
       {/* Hero */}
-      <div
-        style={{
-          background: 'linear-gradient(135deg, #006747 0%, #004d35 100%)',
-          borderBottom: '3px solid #c9a227',
-        }}
-      >
-        <div className="max-w-4xl mx-auto px-6 py-20 text-center">
-          <h1
-            className="text-4xl md:text-5xl text-white mb-4"
-            style={{ fontFamily: 'Georgia, serif', fontWeight: 400 }}
-          >
+      <div className="bg-gradient-to-br from-[var(--masters-green)] to-[var(--masters-green-dark)] border-b-[3px] border-[var(--masters-gold)]">
+        <div className="max-w-4xl mx-auto px-6 py-24 text-center">
+          <h1 className="text-4xl md:text-5xl text-white mb-4 font-display font-normal tracking-wide">
             Golf Pick&apos;em League
           </h1>
-          <p className="text-lg text-white/80 mb-10 max-w-xl mx-auto">
+          <p className="text-lg text-white/80 mb-12 max-w-xl mx-auto">
             Draft PGA Tour players, compete with friends, and track live tournament scores
           </p>
 
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <Link
               href="/login"
-              className="font-medium py-3 px-8 text-lg transition-opacity hover:opacity-90 text-center"
-              style={{ background: '#c9a227', color: '#1a1a1a' }}
+              className="font-medium py-3 px-8 text-lg rounded-lg bg-[var(--masters-gold)] text-[var(--charcoal)] transition-all hover:brightness-110 hover:shadow-lg text-center"
             >
               Login
             </Link>
             <Link
               href="/signup"
-              className="font-medium py-3 px-8 text-lg transition-opacity hover:opacity-90 text-center"
-              style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: '1px solid rgba(255,255,255,0.3)' }}
+              className="font-medium py-3 px-8 text-lg rounded-lg bg-white/15 text-white border border-white/30 transition-all hover:bg-white/25 hover:shadow-lg text-center backdrop-blur-sm"
             >
               Sign Up
             </Link>
@@ -54,62 +44,35 @@ export default function HomePage() {
       </div>
 
       {/* How It Works */}
-      <div className="max-w-4xl mx-auto px-6 py-16">
-        <h2
-          className="text-2xl text-center mb-10"
-          style={{ fontFamily: 'Georgia, serif', color: '#1a1a1a' }}
-        >
+      <div className="max-w-4xl mx-auto px-6 py-20">
+        <h2 className="text-2xl text-center mb-12 font-display text-[var(--charcoal)]">
           How It Works
         </h2>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center mb-12">
-          <div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-14">
+          {[
+            { num: '1', title: 'Create Account', desc: 'Sign up and get approved to join' },
+            { num: '2', title: 'Join a League', desc: 'Create or join a league with an invite code' },
+            { num: '3', title: 'Draft Players', desc: 'Pick your PGA Tour players before the deadline' },
+            { num: '4', title: 'Compete', desc: 'Lowest combined score wins, just like real golf' },
+          ].map((step) => (
             <div
-              className="w-10 h-10 mx-auto mb-3 flex items-center justify-center text-white text-sm font-semibold"
-              style={{ background: '#006747', borderRadius: '50%' }}
+              key={step.num}
+              className="text-center bg-white rounded-xl p-6 shadow-sm card-hover"
             >
-              1
+              <div className="w-10 h-10 mx-auto mb-4 flex items-center justify-center text-white text-sm font-semibold rounded-full bg-[var(--masters-green)]">
+                {step.num}
+              </div>
+              <h3 className="font-medium mb-1 text-[var(--charcoal)]">{step.title}</h3>
+              <p className="text-sm text-gray-500">{step.desc}</p>
             </div>
-            <h3 className="font-medium mb-1" style={{ color: '#1a1a1a' }}>Create Account</h3>
-            <p className="text-sm" style={{ color: '#666' }}>Sign up and get approved to join</p>
-          </div>
-          <div>
-            <div
-              className="w-10 h-10 mx-auto mb-3 flex items-center justify-center text-white text-sm font-semibold"
-              style={{ background: '#006747', borderRadius: '50%' }}
-            >
-              2
-            </div>
-            <h3 className="font-medium mb-1" style={{ color: '#1a1a1a' }}>Join a League</h3>
-            <p className="text-sm" style={{ color: '#666' }}>Create or join a league with an invite code</p>
-          </div>
-          <div>
-            <div
-              className="w-10 h-10 mx-auto mb-3 flex items-center justify-center text-white text-sm font-semibold"
-              style={{ background: '#006747', borderRadius: '50%' }}
-            >
-              3
-            </div>
-            <h3 className="font-medium mb-1" style={{ color: '#1a1a1a' }}>Draft Players</h3>
-            <p className="text-sm" style={{ color: '#666' }}>Pick your PGA Tour players before the deadline</p>
-          </div>
-          <div>
-            <div
-              className="w-10 h-10 mx-auto mb-3 flex items-center justify-center text-white text-sm font-semibold"
-              style={{ background: '#006747', borderRadius: '50%' }}
-            >
-              4
-            </div>
-            <h3 className="font-medium mb-1" style={{ color: '#1a1a1a' }}>Compete</h3>
-            <p className="text-sm" style={{ color: '#666' }}>Lowest combined score wins, just like real golf</p>
-          </div>
+          ))}
         </div>
 
         <div className="text-center">
           <Link
             href="/about"
-            className="text-sm font-medium transition-opacity hover:opacity-80"
-            style={{ color: '#006747' }}
+            className="text-sm font-medium text-[var(--masters-green)] transition-colors hover:text-[var(--masters-green-dark)]"
           >
             Learn more about Golf Pick&apos;em &rarr;
           </Link>
