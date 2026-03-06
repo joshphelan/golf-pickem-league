@@ -124,3 +124,22 @@ body {
   letter-spacing: 0.05em;
   margin: 0;
 }
+
+/* Mobile-responsive leaderboard grid */
+@media (max-width: 640px) {
+  .standings-grid {
+    grid-template-columns: 2rem 1fr 4rem !important;
+  }
+  .standings-grid .hide-mobile {
+    display: none;
+  }
+  .roster-grid {
+    grid-template-columns: 1fr 4rem !important;
+  }
+  .roster-grid.has-actions {
+    grid-template-columns: 1fr 4rem 4rem !important;
+  }
+  .roster-grid .hide-mobile {
+    display: none;
+  }
+}

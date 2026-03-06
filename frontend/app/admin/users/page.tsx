@@ -130,19 +130,19 @@ export default function AdminUsersPage() {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         User
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="hidden md:table-cell px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Email
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="hidden md:table-cell px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Joined
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Permissions
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Actions
                       </th>
                     </tr>
@@ -154,7 +154,7 @@ export default function AdminUsersPage() {
 
                       return (
                         <tr key={user.id} className={isCurrentUser ? 'bg-blue-50' : ''}>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-3 md:px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
                               <div className="text-sm font-medium text-gray-900">
                                 {user.username}
@@ -164,13 +164,13 @@ export default function AdminUsersPage() {
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="hidden md:table-cell px-3 md:px-6 py-4 whitespace-nowrap">
                             <div className="text-sm text-gray-600">{user.email}</div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          <td className="hidden md:table-cell px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                             {format(new Date(user.created_at), 'MMM d, yyyy')}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-3 md:px-6 py-4 whitespace-nowrap">
                             <div className="flex flex-wrap gap-1">
                               {user.is_primary_owner && (
                                 <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded">
@@ -194,7 +194,7 @@ export default function AdminUsersPage() {
                               )}
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <td className="px-3 md:px-6 py-4 whitespace-nowrap text-sm">
                             {user.is_primary_owner ? (
                               <span className="text-gray-400 italic">Protected</span>
                             ) : isCurrentUser ? (

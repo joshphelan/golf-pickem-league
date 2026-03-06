@@ -34,17 +34,17 @@ export default function HomePage() {
             Draft PGA Tour players, compete with friends, and track live tournament scores
           </p>
 
-          <div className="flex justify-center gap-4">
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
             <Link
               href="/login"
-              className="font-medium py-3 px-8 text-lg transition-opacity hover:opacity-90"
+              className="font-medium py-3 px-8 text-lg transition-opacity hover:opacity-90 text-center"
               style={{ background: '#c9a227', color: '#1a1a1a' }}
             >
               Login
             </Link>
             <Link
               href="/signup"
-              className="font-medium py-3 px-8 text-lg transition-opacity hover:opacity-90"
+              className="font-medium py-3 px-8 text-lg transition-opacity hover:opacity-90 text-center"
               style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: '1px solid rgba(255,255,255,0.3)' }}
             >
               Sign Up
@@ -62,7 +62,7 @@ export default function HomePage() {
           How It Works
         </h2>
 
-        <div className="grid md:grid-cols-4 gap-8 text-center mb-12">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center mb-12">
           <div>
             <div
               className="w-10 h-10 mx-auto mb-3 flex items-center justify-center text-white text-sm font-semibold"

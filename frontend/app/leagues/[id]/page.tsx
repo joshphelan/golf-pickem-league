@@ -141,8 +141,8 @@ export default function LeagueDetailsPage() {
                 borderBottom: '3px solid #c9a227',
               }}
             >
-              <div className="max-w-5xl mx-auto px-6 py-6">
-                <div className="flex items-start justify-between">
+              <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                   <div>
                     <div className="flex items-center gap-3 mb-2">
                       {tournamentStatus === 'active' && (
@@ -192,7 +192,7 @@ export default function LeagueDetailsPage() {
               </div>
             </div>
 
-            <div className="max-w-5xl mx-auto px-6 py-6">
+            <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
               <ErrorMessage message={error} />
               {successMessage && (
                 <div
@@ -306,7 +306,7 @@ export default function LeagueDetailsPage() {
                 <div style={{ background: 'white' }}>
                   {/* Header */}
                   <div
-                    className="grid gap-4 px-4 py-3 text-xs uppercase tracking-wider"
+                    className="standings-grid grid gap-4 px-3 sm:px-4 py-3 text-xs uppercase tracking-wider"
                     style={{
                       gridTemplateColumns: '3rem 1fr auto 5rem',
                       background: '#006747',
@@ -316,7 +316,7 @@ export default function LeagueDetailsPage() {
                   >
                     <span>Pos</span>
                     <span>Team</span>
-                    <span>Owner</span>
+                    <span className="hide-mobile">Owner</span>
                     <span className="text-right">Score</span>
                   </div>
 
@@ -324,7 +324,7 @@ export default function LeagueDetailsPage() {
                   {standings.map((standing, idx) => (
                     <div
                       key={standing.team_id}
-                      className="grid gap-4 px-4 py-4 items-center transition-colors"
+                      className="standings-grid grid gap-4 px-3 sm:px-4 py-3 sm:py-4 items-center transition-colors"
                       style={{
                         gridTemplateColumns: '3rem 1fr auto 5rem',
                         borderBottom: '1px solid #f0f0f0',
@@ -334,10 +334,10 @@ export default function LeagueDetailsPage() {
                       <span className="font-semibold" style={{ color: '#1a1a1a' }}>
                         {standing.rank || '-'}
                       </span>
-                      <div>
+                      <div className="min-w-0">
                         <Link
                           href={`/teams/${standing.team_id}`}
-                          className="font-medium hover:underline"
+                          className="font-medium hover:underline truncate block"
                           style={{ color: '#006747' }}
                         >
                           {standing.team_name}
@@ -357,7 +357,7 @@ export default function LeagueDetailsPage() {
                           ))}
                         </div>
                       </div>
-                      <span className="text-sm" style={{ color: '#666' }}>
+                      <span className="hide-mobile text-sm" style={{ color: '#666' }}>
                         {standing.owner_name}
                       </span>
                       <span

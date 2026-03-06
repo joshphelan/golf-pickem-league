@@ -69,18 +69,18 @@ export default function DashboardPage() {
       <div className="min-h-screen" style={{ background: '#fffef7' }}>
         <Navbar />
 
-        <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
           <ErrorMessage message={error} />
 
           {loading ? (
             <LoadingSpinner />
           ) : (
-            <div className="flex gap-8">
+            <div className="flex flex-col lg:flex-row gap-8">
               {/* Main Content */}
               <div className="flex-1 min-w-0">
                 {/* Join League */}
                 <div
-                  className="mb-10 p-5 flex items-center gap-4"
+                  className="mb-6 sm:mb-10 p-4 sm:p-5 flex items-center gap-4"
                   style={{
                     background: 'linear-gradient(135deg, #006747 0%, #004d35 100%)',
                     borderRadius: '2px',
@@ -88,14 +88,14 @@ export default function DashboardPage() {
                 >
                   <div className="flex-1">
                     <p className="text-white text-sm font-medium mb-1">Have an invite code?</p>
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2">
                       <input
                         type="text"
                         value={joinCode}
                         onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
                         placeholder="XXXXXXXX"
                         maxLength={8}
-                        className="w-36 px-3 py-2 text-sm font-mono tracking-widest border-0"
+                        className="w-full sm:w-36 px-3 py-2 text-sm font-mono tracking-widest border-0"
                         style={{ background: 'rgba(255,255,255,0.95)' }}
                       />
                       <button
@@ -111,7 +111,7 @@ export default function DashboardPage() {
                 </div>
 
                 {/* My Leagues */}
-                <section className="mb-10">
+                <section className="mb-6 sm:mb-10">
                   <div className="flex justify-between items-center mb-4">
                     <h2
                       className="text-lg"
@@ -253,42 +253,40 @@ export default function DashboardPage() {
                         {upcomingTournaments.map((tournament) => (
                           <div
                             key={tournament.id}
-                            className="flex items-center justify-between p-3"
+                            className="flex items-center gap-3 p-3"
                             style={{
                               background: 'white',
                               borderBottom: '1px solid #f0f0f0',
                             }}
                           >
-                            <div className="flex items-center gap-4">
-                              <div
-                                className="text-center w-12"
-                                style={{ color: '#006747' }}
-                              >
-                                <p className="text-xs uppercase">
-                                  {tournament.start_date
-                                    ? format(new Date(tournament.start_date), 'MMM')
-                                    : ''}
+                            <div
+                              className="text-center w-10 flex-shrink-0"
+                              style={{ color: '#006747' }}
+                            >
+                              <p className="text-xs uppercase">
+                                {tournament.start_date
+                                  ? format(new Date(tournament.start_date), 'MMM')
+                                  : ''}
+                              </p>
+                              <p className="text-lg font-semibold">
+                                {tournament.start_date
+                                  ? format(new Date(tournament.start_date), 'd')
+                                  : '-'}
+                              </p>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm sm:text-base" style={{ color: '#1a1a1a' }}>
+                                {tournament.name}
+                              </p>
+                              {tournament.venue && (
+                                <p className="text-sm truncate" style={{ color: '#888' }}>
+                                  {tournament.venue}
                                 </p>
-                                <p className="text-lg font-semibold">
-                                  {tournament.start_date
-                                    ? format(new Date(tournament.start_date), 'd')
-                                    : '-'}
-                                </p>
-                              </div>
-                              <div>
-                                <p className="font-medium" style={{ color: '#1a1a1a' }}>
-                                  {tournament.name}
-                                </p>
-                                {tournament.venue && (
-                                  <p className="text-sm" style={{ color: '#888' }}>
-                                    {tournament.venue}
-                                  </p>
-                                )}
-                              </div>
+                              )}
                             </div>
                             <Link
                               href={`/leagues/create?tournament=${tournament.id}`}
-                              className="text-sm px-3 py-1.5 transition-colors hover:opacity-80"
+                              className="text-xs sm:text-sm px-2 sm:px-3 py-1.5 transition-colors hover:opacity-80 flex-shrink-0"
                               style={{
                                 background: '#006747',
                                 color: 'white',
@@ -305,7 +303,7 @@ export default function DashboardPage() {
               </div>
 
               {/* Live Tournament Panel */}
-              <aside className="w-72 flex-shrink-0">
+              <aside className="w-full lg:w-72 lg:flex-shrink-0">
                 <div
                   style={{
                     background: 'white',

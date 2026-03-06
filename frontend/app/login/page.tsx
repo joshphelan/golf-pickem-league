@@ -37,9 +37,9 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#fffef7' }}>
-      <div className="max-w-md w-full p-8" style={{ background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+      <div className="max-w-md w-full p-6 sm:p-8" style={{ background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
         <h1
-          className="text-3xl text-center mb-6"
+          className="text-2xl sm:text-3xl text-center mb-6"
           style={{ fontFamily: 'Georgia, serif', color: '#006747' }}
         >
           Golf Pick&apos;em League

@@ -160,7 +160,7 @@ export default function TeamDetailsPage() {
       <div className="min-h-screen" style={{ background: '#fffef7' }}>
         <Navbar />
 
-        <div className="max-w-4xl mx-auto px-6 py-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
           {/* Header */}
           <div className="mb-6">
             <Link
@@ -195,7 +195,7 @@ export default function TeamDetailsPage() {
 
           {/* Team Score Card */}
           <div
-            className="mb-8 flex items-center justify-between"
+            className="mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
             style={{
               background: 'linear-gradient(135deg, #006747 0%, #004d35 100%)',
               padding: '1.5rem',
@@ -249,7 +249,7 @@ export default function TeamDetailsPage() {
             <div style={{ background: 'white' }}>
               {/* Header */}
               <div
-                className="grid gap-2 px-4 py-3 text-xs uppercase tracking-wider"
+                className={`roster-grid${isOwner ? ' has-actions' : ''} grid gap-2 px-3 sm:px-4 py-3 text-xs uppercase tracking-wider`}
                 style={{
                   gridTemplateColumns: '1fr repeat(4, 4rem) 5rem' + (isOwner ? ' 4rem' : ''),
                   background: '#006747',
@@ -258,10 +258,10 @@ export default function TeamDetailsPage() {
                 }}
               >
                 <span>Player</span>
-                <span className="text-center">R1</span>
-                <span className="text-center">R2</span>
-                <span className="text-center">R3</span>
-                <span className="text-center">R4</span>
+                <span className="hide-mobile text-center">R1</span>
+                <span className="hide-mobile text-center">R2</span>
+                <span className="hide-mobile text-center">R3</span>
+                <span className="hide-mobile text-center">R4</span>
                 <span className="text-center">Total</span>
                 {isOwner && <span></span>}
               </div>
@@ -270,26 +270,26 @@ export default function TeamDetailsPage() {
               {team.players?.map((teamPlayer, idx) => (
                 <div
                   key={teamPlayer.id}
-                  className="grid gap-2 px-4 py-4 items-center"
+                  className={`roster-grid${isOwner ? ' has-actions' : ''} grid gap-2 px-3 sm:px-4 py-3 sm:py-4 items-center`}
                   style={{
                     gridTemplateColumns: '1fr repeat(4, 4rem) 5rem' + (isOwner ? ' 4rem' : ''),
                     borderBottom: '1px solid #f0f0f0',
                     background: idx % 2 === 0 ? 'white' : '#fafafa',
                   }}
                 >
-                  <span className="font-medium" style={{ color: '#1a1a1a' }}>
+                  <span className="font-medium truncate" style={{ color: '#1a1a1a' }}>
                     {teamPlayer.player.full_name}
                   </span>
-                  <span className="text-center" style={getScoreStyle(teamPlayer.scores?.round_1)}>
+                  <span className="hide-mobile text-center" style={getScoreStyle(teamPlayer.scores?.round_1)}>
                     {formatScore(teamPlayer.scores?.round_1)}
                   </span>
-                  <span className="text-center" style={getScoreStyle(teamPlayer.scores?.round_2)}>
+                  <span className="hide-mobile text-center" style={getScoreStyle(teamPlayer.scores?.round_2)}>
                     {formatScore(teamPlayer.scores?.round_2)}
                   </span>
-                  <span className="text-center" style={getScoreStyle(teamPlayer.scores?.round_3)}>
+                  <span className="hide-mobile text-center" style={getScoreStyle(teamPlayer.scores?.round_3)}>
                     {formatScore(teamPlayer.scores?.round_3)}
                   </span>
-                  <span className="text-center" style={getScoreStyle(teamPlayer.scores?.round_4)}>
+                  <span className="hide-mobile text-center" style={getScoreStyle(teamPlayer.scores?.round_4)}>
                     {formatScore(teamPlayer.scores?.round_4)}
                   </span>
                   <span

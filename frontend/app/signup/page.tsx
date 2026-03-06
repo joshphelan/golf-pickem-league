@@ -54,7 +54,7 @@ export default function SignupPage() {
 
     return (
       <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#fffef7' }}>
-        <div className="max-w-md w-full p-8" style={{ background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+        <div className="max-w-md w-full p-6 sm:p-8" style={{ background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
           <div className="text-center">
             <div
               className="mx-auto flex items-center justify-center h-12 w-12 rounded-full mb-4"
@@ -92,9 +92,9 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#fffef7' }}>
-      <div className="max-w-md w-full p-8" style={{ background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+      <div className="max-w-md w-full p-6 sm:p-8" style={{ background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
         <h1
-          className="text-3xl text-center mb-6"
+          className="text-2xl sm:text-3xl text-center mb-6"
           style={{ fontFamily: 'Georgia, serif', color: '#006747' }}
         >
           Golf Pick&apos;em League
