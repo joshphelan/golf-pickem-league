@@ -15,6 +15,12 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Golf Pickem League",
   description: "Fantasy golf league application for PGA Tour tournaments",
+  appleWebApp: {
+    statusBarStyle: 'default',
+  },
+  other: {
+    'apple-mobile-web-app-capable': 'yes',
+  },
 };
 
 export default function RootLayout({

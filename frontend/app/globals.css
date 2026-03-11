@@ -157,6 +157,19 @@ input:focus, select:focus, textarea:focus {
   box-shadow: 0 0 0 3px rgba(0, 103, 71, 0.1);
 }
 
+/* PWA standalone mode — only active when launched from home screen */
+@media (display-mode: standalone) {
+  body {
+    overscroll-behavior: none;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  *:not(input):not(textarea):not([contenteditable]) {
+    user-select: none;
+  }
+}
+
 /* Mobile-responsive leaderboard grid */
 @media (max-width: 640px) {
   .standings-grid {
