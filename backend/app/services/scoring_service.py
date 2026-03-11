@@ -83,8 +83,9 @@ def calculate_team_score(
 
         if score and score.total_score is not None:
             total_score += score.total_score
-            players_with_scores += 1
-    
+        # Player has no tournament records — did not participate, count as 0
+        players_with_scores += 1
+
     # Only return score if all players have scores
     expected_players = len(team_players)
     if players_with_scores < expected_players:
@@ -163,12 +164,13 @@ def calculate_league_standings(
                     .first()
                 )
 
+            player_score = score.total_score if (score and score.total_score is not None) else None
             player_scores.append({
                 'player_id': str(player.id),
                 'name': player.full_name,  # Frontend expects 'name'
-                'score': score.total_score if score else None,
+                'score': player_score,
                 'position': score.position if score else None,
-                'made_cut': score.made_cut if score else True
+                'made_cut': score.made_cut if score else False
             })
         
         standings.append({
