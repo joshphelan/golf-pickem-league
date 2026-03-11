@@ -81,7 +81,9 @@ class TeamDetailResponse(TeamResponse):
     """Team with players and current score."""
     players: List[TeamPlayerResponse] = []
     total_score: Optional[int] = None
-    
+    team_size: int = 4
+    last_score_sync: Optional[str] = None
+
     class Config:
         from_attributes = True
 
