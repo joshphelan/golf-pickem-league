@@ -34,18 +34,18 @@ def parse_api_date(date_obj) -> Optional[date]:
                     # Convert milliseconds to seconds
                     timestamp_ms = int(inner['$numberLong'])
                     timestamp_s = timestamp_ms / 1000
-                    return datetime.fromtimestamp(timestamp_s).date()
+                    return datetime.utcfromtimestamp(timestamp_s).date()
                 elif isinstance(inner, (int, str)):
                     # Direct timestamp
                     timestamp_ms = int(inner)
                     timestamp_s = timestamp_ms / 1000
-                    return datetime.fromtimestamp(timestamp_s).date()
-        
+                    return datetime.utcfromtimestamp(timestamp_s).date()
+
         # Handle direct integer timestamp (milliseconds)
         if isinstance(date_obj, (int, str)):
             timestamp_ms = int(date_obj)
             timestamp_s = timestamp_ms / 1000
-            return datetime.fromtimestamp(timestamp_s).date()
+            return datetime.utcfromtimestamp(timestamp_s).date()
         
     except (ValueError, TypeError, KeyError):
         pass

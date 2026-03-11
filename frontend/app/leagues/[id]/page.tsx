@@ -247,7 +247,7 @@ export default function LeagueDetailsPage() {
                   Scores update every {syncInterval} minutes during active tournament hours ({formatHour(hoursStart)} - {formatHour(hoursEnd)} local time)
                   {standingsData?.last_score_sync && (
                     <span className="ml-3 text-gray-400">
-                      Last refresh: {format(new Date(standingsData.last_score_sync), 'h:mm a')}
+                      Last refresh: {format(new Date(standingsData.last_score_sync), "EEE MMMM d 'at' h:mm a")}
                     </span>
                   )}
                 </div>

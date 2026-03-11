@@ -160,7 +160,7 @@ export default function TeamDetailsPage() {
             </h1>
             {team.last_score_sync && (
               <p className="text-xs mt-1 text-gray-400">
-                Last refresh: {format(new Date(team.last_score_sync), 'h:mm a')}
+                Last refresh: {format(new Date(team.last_score_sync), "EEE MMMM d 'at' h:mm a")}
               </p>
             )}
           </div>
