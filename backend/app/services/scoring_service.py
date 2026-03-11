@@ -164,7 +164,7 @@ def calculate_league_standings(
                     .first()
                 )
 
-            player_score = score.total_score if (score and score.total_score is not None) else 0
+            player_score = score.total_score if (score and score.total_score is not None) else None
             player_scores.append({
                 'player_id': str(player.id),
                 'name': player.full_name,  # Frontend expects 'name'
