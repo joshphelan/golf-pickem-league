@@ -60,7 +60,7 @@ def calculate_team_score(
     players_with_scores = 0
     
     for tp in team_players:
-        # Get player's score for this round
+        # Get player's score for this round, falling back to their latest available round
         score = (
             db.query(PlayerScore)
             .filter(
@@ -70,7 +70,17 @@ def calculate_team_score(
             )
             .first()
         )
-        
+        if score is None:
+            score = (
+                db.query(PlayerScore)
+                .filter(
+                    PlayerScore.tournament_id == tournament_id,
+                    PlayerScore.player_id == tp.player_id,
+                )
+                .order_by(PlayerScore.round.desc())
+                .first()
+            )
+
         if score and score.total_score is not None:
             total_score += score.total_score
             players_with_scores += 1
@@ -142,7 +152,17 @@ def calculate_league_standings(
                 )
                 .first()
             )
-            
+            if score is None:
+                score = (
+                    db.query(PlayerScore)
+                    .filter(
+                        PlayerScore.tournament_id == league.tournament_id,
+                        PlayerScore.player_id == tp.player_id,
+                    )
+                    .order_by(PlayerScore.round.desc())
+                    .first()
+                )
+
             player_scores.append({
                 'player_id': str(player.id),
                 'name': player.full_name,  # Frontend expects 'name'
