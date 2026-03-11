@@ -7,7 +7,7 @@ import Navbar from '@/components/Navbar';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorMessage from '@/components/ErrorMessage';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { teamAPI, tournamentAPI, leagueAPI, Team, Player } from '@/lib/api';
+import { teamAPI, Team, Player } from '@/lib/api';
 import { getUser } from '@/lib/auth';
 import { format } from 'date-fns';
 import { formatScore, getScoreStyle } from '@/lib/formatScore';
@@ -23,7 +23,6 @@ export default function TeamDetailsPage() {
   const [successMessage, setSuccessMessage] = useState('');
   const [showDraftModal, setShowDraftModal] = useState(false);
   const [user, setUser] = useState<any>(null);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const params = useParams();
   const teamId = params.id as string;
 
@@ -48,7 +47,6 @@ export default function TeamDetailsPage() {
     try {
       const teamData = await teamAPI.getTeam(teamId);
       setTeam(teamData);
-      setLastUpdated(new Date());
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to load team data');
     } finally {
@@ -57,19 +55,8 @@ export default function TeamDetailsPage() {
   };
 
   const loadAvailablePlayers = async () => {
-    if (!team?.league_id) return;
-
     try {
-      const leagueData = await leagueAPI.getLeague(team.league_id);
-      if (!leagueData.tournament_id) {
-        setError('League has no associated tournament');
-        return;
-      }
-
-      const players = await tournamentAPI.getAvailablePlayers(
-        leagueData.tournament_id,
-        team.league_id
-      );
+      const players = await teamAPI.getAvailablePlayers(teamId);
       setAvailablePlayers(players);
       setFilteredPlayers(players);
     } catch (err: any) {
@@ -86,7 +73,6 @@ export default function TeamDetailsPage() {
       await teamAPI.draftPlayer(teamId, playerId);
       const updatedTeam = await teamAPI.getTeam(teamId);
       setTeam(updatedTeam);
-      setLastUpdated(new Date());
       await loadAvailablePlayers();
 
       const newCount = updatedTeam.players?.length || 0;
@@ -152,7 +138,7 @@ export default function TeamDetailsPage() {
 
   const isOwner = user?.id === team.user_id;
   const draftedCount = team.players?.length || 0;
-  const maxPlayers = 4;
+  const maxPlayers = team.team_size ?? 4;
   const canDraft = isOwner && draftedCount < maxPlayers;
 
   return (
@@ -172,9 +158,9 @@ export default function TeamDetailsPage() {
             <h1 className="text-2xl mt-2 font-display text-[var(--charcoal)]">
               {team.name}
             </h1>
-            {lastUpdated && (
+            {team.last_score_sync && (
               <p className="text-xs mt-1 text-gray-400">
-                Updated {format(lastUpdated, 'h:mm a')}
+                Last refresh: {format(new Date(team.last_score_sync), 'h:mm a')}
               </p>
             )}
           </div>

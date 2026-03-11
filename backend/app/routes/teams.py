@@ -1,7 +1,7 @@
 """Team and player draft endpoints."""
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy import and_
+from sqlalchemy import and_, func
 from typing import List
 from uuid import UUID
 from datetime import datetime, timezone
@@ -61,8 +61,8 @@ def get_team(
     
     # Get tournament to fetch scores (if available)
     tournament_id = None
+    league = team.league
     try:
-        league = team.league
         tournament_id = league.tournament_id
     except Exception:
         pass  # No tournament associated yet
@@ -123,10 +123,19 @@ def get_team(
         
         players_with_scores.append(player_dict)
     
+    # Get actual last score sync time from DB
+    last_score_sync = None
+    if tournament_id:
+        last_score_sync = db.query(func.max(PlayerScore.updated_at)).filter(
+            PlayerScore.tournament_id == tournament_id
+        ).scalar()
+
     team_dict = TeamDetailResponse.model_validate(team).model_dump()
     team_dict['players'] = players_with_scores
     team_dict['total_score'] = total_score
-    
+    team_dict['team_size'] = league.team_size
+    team_dict['last_score_sync'] = last_score_sync.isoformat() if last_score_sync else None
+
     return team_dict
 
 
@@ -192,23 +201,20 @@ def add_player_to_team(
             detail="Player is not registered for this tournament"
         )
     
-    # Check if player already drafted in this league
-    teams_in_league = db.query(Team).filter(Team.league_id == league.id).all()
-    team_ids = [t.id for t in teams_in_league]
-    
-    existing_draft = db.query(TeamPlayer).filter(
+    # Check if player already on this team
+    existing_pick = db.query(TeamPlayer).filter(
         and_(
-            TeamPlayer.team_id.in_(team_ids),
+            TeamPlayer.team_id == team_id,
             TeamPlayer.player_id == player_data.player_id
         )
     ).first()
-    
-    if existing_draft:
+
+    if existing_pick:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Player already drafted by another team in this league"
+            detail="Player is already on your team"
         )
-    
+
     # Check team size limit
     current_player_count = db.query(TeamPlayer).filter(TeamPlayer.team_id == team_id).count()
     if current_player_count >= league.team_size:
@@ -317,33 +323,30 @@ def get_available_players(
         )
     
     league = team.league
-    
+
     # Get all players registered for the tournament
     tournament_players = db.query(TournamentPlayer).filter(
         TournamentPlayer.tournament_id == league.tournament_id
     ).all()
-    
+
     tournament_player_ids = [tp.player_id for tp in tournament_players]
-    
-    # Get already drafted players in this league
-    teams_in_league = db.query(Team).filter(Team.league_id == league.id).all()
-    team_ids = [t.id for t in teams_in_league]
-    
-    drafted_players = db.query(TeamPlayer).filter(
-        TeamPlayer.team_id.in_(team_ids)
+
+    # Only exclude players already on THIS team (other teams can pick the same player)
+    this_team_picks = db.query(TeamPlayer).filter(
+        TeamPlayer.team_id == team_id
     ).all()
-    
-    drafted_player_ids = [tp.player_id for tp in drafted_players]
-    
-    # Get available players (registered but not drafted)
+
+    this_team_player_ids = {tp.player_id for tp in this_team_picks}
+
+    # Get available players (registered for tournament, not already on this team)
     available_player_ids = [
         pid for pid in tournament_player_ids
-        if pid not in drafted_player_ids
+        if pid not in this_team_player_ids
     ]
-    
+
     available_players = db.query(Player).filter(
         Player.id.in_(available_player_ids)
     ).order_by(Player.last_name).all()
-    
+
     return available_players
 

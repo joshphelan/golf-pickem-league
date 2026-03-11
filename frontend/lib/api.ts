@@ -114,6 +114,8 @@ export interface Team {
   created_at: string;
   players?: TeamPlayer[];
   total_score?: number | null;
+  team_size?: number;
+  last_score_sync?: string | null;
 }
 
 export interface LeagueStanding {
@@ -262,6 +264,11 @@ export const teamAPI = {
 
   undraftPlayer: async (teamId: string, playerId: string): Promise<Team> => {
     const response = await api.delete(`/teams/${teamId}/players/${playerId}`);
+    return response.data;
+  },
+
+  getAvailablePlayers: async (teamId: string): Promise<Player[]> => {
+    const response = await api.get(`/teams/${teamId}/available-players`);
     return response.data;
   },
 };
