@@ -12,6 +12,7 @@ from ..models.tournament import Player, TournamentPlayer, PlayerScore
 from ..models.user import User
 from ..schemas.league import (
     TeamDetailResponse,
+    TeamUpdate,
     AddPlayerToTeam,
     TeamPlayerResponse
 )
@@ -137,6 +138,25 @@ def get_team(
     team_dict['last_score_sync'] = last_score_sync.isoformat() if last_score_sync else None
 
     return team_dict
+
+
+@router.patch("/{team_id}", response_model=TeamDetailResponse)
+def update_team(
+    team_id: UUID,
+    update_data: TeamUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Update team name. User must own the team."""
+    team = db.query(Team).filter(Team.id == team_id).first()
+    if not team:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
+    if team.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only modify your own team")
+
+    team.team_name = update_data.team_name.strip()
+    db.commit()
+    return get_team(team_id, db, current_user)
 
 
 @router.post("/{team_id}/players", response_model=TeamDetailResponse, status_code=status.HTTP_201_CREATED)

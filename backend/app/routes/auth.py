@@ -122,6 +122,34 @@ def get_current_user_info(current_user: User = Depends(get_current_user)):
     return current_user
 
 
+@router.patch("/me", response_model=UserResponse)
+def update_current_user(
+    update_data: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Update the current user's profile (username only).
+    """
+    from pydantic import BaseModel, Field
+
+    new_username = update_data.get('username', '').strip()
+    if not new_username:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username is required")
+    if len(new_username) < 3 or len(new_username) > 50:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username must be 3–50 characters")
+
+    if new_username != current_user.username:
+        existing = db.query(User).filter(User.username == new_username).first()
+        if existing:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username already taken")
+        current_user.username = new_username
+        db.commit()
+        db.refresh(current_user)
+
+    return current_user
+
+
 # Owner-only endpoints (user management)
 @router.get("/admin/users", response_model=List[UserResponse])
 def list_all_users(

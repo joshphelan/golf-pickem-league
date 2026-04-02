@@ -8,6 +8,7 @@ import ErrorMessage from '@/components/ErrorMessage';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { tournamentAPI, leagueAPI, Tournament } from '@/lib/api';
 import { format } from 'date-fns';
+import { parseLocalDate } from '@/lib/parseDate';
 
 function CreateLeagueForm() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
@@ -15,6 +16,7 @@ function CreateLeagueForm() {
   const [tournamentId, setTournamentId] = useState('');
   const [draftDeadline, setDraftDeadline] = useState('');
   const [teamSize, setTeamSize] = useState(4);
+  const [scoringCount, setScoringCount] = useState(4);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -32,10 +34,10 @@ function CreateLeagueForm() {
       if (tournament) {
         setTournamentId(tournament.id);
         if (tournament.start_date) {
-          const startDate = new Date(tournament.start_date);
+          const startDate = parseLocalDate(tournament.start_date);
           startDate.setDate(startDate.getDate() - 1);
           startDate.setHours(23, 59, 0, 0);
-          setDraftDeadline(startDate.toISOString().slice(0, 16));
+          setDraftDeadline(format(startDate, "yyyy-MM-dd'T'HH:mm"));
         }
       }
     }
@@ -59,10 +61,10 @@ function CreateLeagueForm() {
     setTournamentId(id);
     const tournament = tournaments.find((t) => t.id === id);
     if (tournament?.start_date && !draftDeadline) {
-      const startDate = new Date(tournament.start_date);
+      const startDate = parseLocalDate(tournament.start_date);
       startDate.setDate(startDate.getDate() - 1);
       startDate.setHours(23, 59, 0, 0);
-      setDraftDeadline(startDate.toISOString().slice(0, 16));
+      setDraftDeadline(format(startDate, "yyyy-MM-dd'T'HH:mm"));
     }
   };
 
@@ -77,6 +79,7 @@ function CreateLeagueForm() {
         tournament_id: tournamentId,
         draft_deadline: new Date(draftDeadline).toISOString(),
         team_size: teamSize,
+        scoring_count: scoringCount,
       });
       router.push(`/leagues/${league.id}`);
     } catch (err: any) {
@@ -141,7 +144,7 @@ function CreateLeagueForm() {
                       <option key={tournament.id} value={tournament.id}>
                         {tournament.name} -{' '}
                         {tournament.start_date
-                          ? format(new Date(tournament.start_date), 'MMM d, yyyy')
+                          ? format(parseLocalDate(tournament.start_date), 'MMM d, yyyy')
                           : tournament.year}
                       </option>
                     ))}
@@ -150,10 +153,10 @@ function CreateLeagueForm() {
                     <p className="mt-2 text-sm text-gray-500">
                       {selectedTournament.venue && `${selectedTournament.venue} - `}
                       {selectedTournament.start_date &&
-                        format(new Date(selectedTournament.start_date), 'MMM d')}{' '}
+                        format(parseLocalDate(selectedTournament.start_date), 'MMM d')}{' '}
                       to{' '}
                       {selectedTournament.end_date &&
-                        format(new Date(selectedTournament.end_date), 'MMM d, yyyy')}
+                        format(parseLocalDate(selectedTournament.end_date), 'MMM d, yyyy')}
                     </p>
                   )}
                 </div>
@@ -199,27 +202,55 @@ function CreateLeagueForm() {
                   </p>
                 </div>
 
-                <div>
-                  <label
-                    htmlFor="teamSize"
-                    className="block text-xs uppercase tracking-wider mb-2 text-gray-400"
-                  >
-                    Team Size
-                  </label>
-                  <input
-                    type="number"
-                    id="teamSize"
-                    value={teamSize}
-                    onChange={(e) => setTeamSize(parseInt(e.target.value))}
-                    required
-                    min="1"
-                    max="10"
-                    className="w-24 px-4 py-2.5 border border-[#e5e2d3] rounded-lg text-sm transition-all"
-                  />
-                  <span className="ml-2 text-sm text-gray-500">
-                    golfers per team
-                  </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label
+                      htmlFor="teamSize"
+                      className="block text-xs uppercase tracking-wider mb-2 text-gray-400"
+                    >
+                      Picks per Team
+                    </label>
+                    <select
+                      id="teamSize"
+                      value={teamSize}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value);
+                        setTeamSize(val);
+                        if (scoringCount > val) setScoringCount(val);
+                      }}
+                      required
+                      className="w-full px-4 py-2.5 border border-[#e5e2d3] rounded-lg text-sm transition-all"
+                    >
+                      {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+                        <option key={n} value={n}>{n} golfers</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="scoringCount"
+                      className="block text-xs uppercase tracking-wider mb-2 text-gray-400"
+                    >
+                      Scores That Count
+                    </label>
+                    <select
+                      id="scoringCount"
+                      value={scoringCount}
+                      onChange={(e) => setScoringCount(parseInt(e.target.value))}
+                      required
+                      className="w-full px-4 py-2.5 border border-[#e5e2d3] rounded-lg text-sm transition-all"
+                    >
+                      {Array.from({ length: teamSize }, (_, i) => i + 1).map((n) => (
+                        <option key={n} value={n}>{n} best score{n > 1 ? 's' : ''}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
+                {scoringCount < teamSize && (
+                  <p className="text-xs text-gray-400 -mt-2">
+                    Pick {teamSize}, count only the best {scoringCount} scores
+                  </p>
+                )}
 
                 <button
                   type="submit"

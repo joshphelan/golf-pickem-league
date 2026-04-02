@@ -13,8 +13,9 @@ class LeagueCreate(BaseModel):
     name: str = Field(..., min_length=3, max_length=100)
     max_members: int = Field(default=10, ge=2, le=50)
     team_size: int = Field(default=4, ge=1, le=10)
+    scoring_count: Optional[int] = Field(default=None, ge=1, le=10)
     draft_deadline: datetime
-    
+
     @field_validator('draft_deadline')
     @classmethod
     def validate_draft_deadline(cls, v):
@@ -22,6 +23,11 @@ class LeagueCreate(BaseModel):
         if v < datetime.now(timezone.utc):
             raise ValueError('Draft deadline must be in the future')
         return v
+
+    def model_post_init(self, __context) -> None:
+        """Ensure scoring_count <= team_size."""
+        if self.scoring_count is not None and self.scoring_count > self.team_size:
+            raise ValueError('scoring_count cannot exceed team_size')
 
 
 class LeagueResponse(BaseModel):
@@ -33,11 +39,12 @@ class LeagueResponse(BaseModel):
     invite_code: str
     max_members: int
     team_size: int
+    scoring_count: Optional[int] = None
     status: str
     draft_deadline: datetime
     created_at: datetime
     updated_at: Optional[datetime] = None
-    
+
     class Config:
         from_attributes = True
 
@@ -97,4 +104,39 @@ class TeamCreate(BaseModel):
 class AddPlayerToTeam(BaseModel):
     """Schema for adding player to team."""
     player_id: UUID
+
+
+class LeagueUpdate(BaseModel):
+    """Schema for updating a league (admin only)."""
+    draft_deadline: Optional[datetime] = None
+
+    @field_validator('draft_deadline')
+    @classmethod
+    def validate_draft_deadline(cls, v):
+        if v is not None and v < datetime.now(timezone.utc):
+            raise ValueError('Draft deadline must be in the future')
+        return v
+
+
+class TeamUpdate(BaseModel):
+    """Schema for updating a team name."""
+    team_name: str = Field(..., min_length=1, max_length=50)
+
+
+class LeagueCommentCreate(BaseModel):
+    """Schema for posting a league comment."""
+    content: str = Field(..., min_length=1, max_length=1000)
+
+
+class LeagueCommentResponse(BaseModel):
+    """League comment response."""
+    id: UUID
+    league_id: UUID
+    user_id: UUID
+    username: str
+    content: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
 

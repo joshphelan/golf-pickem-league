@@ -11,6 +11,7 @@ import { tournamentAPI, leagueAPI, configAPI, Tournament, League, LiveTournament
 import { getUser } from '@/lib/auth';
 import { format } from 'date-fns';
 import { formatScore, getScoreStyle } from '@/lib/formatScore';
+import { parseLocalDate } from '@/lib/parseDate';
 
 export default function DashboardPage() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
@@ -143,7 +144,7 @@ export default function DashboardPage() {
                                   {league.tournament?.name}
                                   {league.tournament?.start_date && (
                                     <span className="ml-2 text-gray-400">
-                                      {format(new Date(league.tournament.start_date), 'MMM d')}
+                                      {format(parseLocalDate(league.tournament.start_date), 'MMM d')}
                                     </span>
                                   )}
                                 </p>
@@ -230,12 +231,12 @@ export default function DashboardPage() {
                             <div className="text-center w-10 flex-shrink-0 text-[var(--masters-green)]">
                               <p className="text-xs uppercase">
                                 {tournament.start_date
-                                  ? format(new Date(tournament.start_date), 'MMM')
+                                  ? format(parseLocalDate(tournament.start_date), 'MMM')
                                   : ''}
                               </p>
                               <p className="text-lg font-semibold">
                                 {tournament.start_date
-                                  ? format(new Date(tournament.start_date), 'd')
+                                  ? format(parseLocalDate(tournament.start_date), 'd')
                                   : '-'}
                               </p>
                             </div>
@@ -313,7 +314,9 @@ export default function DashboardPage() {
                         )}
                       </div>
                       <div className="px-4 py-2.5 text-xs bg-[var(--cream-dark)] text-gray-400 rounded-b-xl">
-                        Updates every {config?.sync_interval_minutes ?? 15} min during play
+                        {liveTournament.last_score_sync
+                          ? `Last refresh: ${format(new Date(liveTournament.last_score_sync), "EEE MMM d 'at' h:mm a")}`
+                          : `Updates every ${config?.sync_interval_minutes ?? 15} min during play`}
                       </div>
                     </>
                   ) : (

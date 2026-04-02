@@ -83,6 +83,10 @@ def get_live_tournament(
                 "made_cut": score.made_cut
             })
 
+    last_score_sync = db.query(func.max(PlayerScore.updated_at)).filter(
+        PlayerScore.tournament_id == tournament.id
+    ).scalar()
+
     return {
         "tournament": {
             "id": str(tournament.id),
@@ -92,6 +96,7 @@ def get_live_tournament(
             "end_date": tournament.end_date.isoformat() if tournament.end_date else None,
         },
         "current_round": current_round,
+        "last_score_sync": last_score_sync.isoformat() if last_score_sync else None,
         "leaderboard": leaderboard
     }
 

@@ -8,6 +8,7 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorMessage from '@/components/ErrorMessage';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { teamAPI, Team, Player } from '@/lib/api';
+
 import { getUser } from '@/lib/auth';
 import { format } from 'date-fns';
 import { formatScore, getScoreStyle } from '@/lib/formatScore';
@@ -22,6 +23,9 @@ export default function TeamDetailsPage() {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [showDraftModal, setShowDraftModal] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [teamNameInput, setTeamNameInput] = useState('');
+  const [savingName, setSavingName] = useState(false);
   const [user, setUser] = useState<any>(null);
   const params = useParams();
   const teamId = params.id as string;
@@ -51,6 +55,23 @@ export default function TeamDetailsPage() {
       setError(err.response?.data?.detail || 'Failed to load team data');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveTeamName = async () => {
+    if (!teamNameInput.trim() || teamNameInput.trim() === team?.team_name) {
+      setEditingName(false);
+      return;
+    }
+    setSavingName(true);
+    try {
+      const updated = await teamAPI.updateTeam(teamId, { team_name: teamNameInput.trim() });
+      setTeam(updated);
+      setEditingName(false);
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to update team name');
+    } finally {
+      setSavingName(false);
     }
   };
 
@@ -155,9 +176,40 @@ export default function TeamDetailsPage() {
             >
               <span>&larr;</span> Back to League
             </Link>
-            <h1 className="text-2xl mt-2 font-display text-[var(--charcoal)]">
-              {team.name}
-            </h1>
+            {editingName ? (
+              <div className="flex items-center gap-2 mt-2">
+                <input
+                  type="text"
+                  value={teamNameInput}
+                  onChange={(e) => setTeamNameInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleSaveTeamName(); if (e.key === 'Escape') setEditingName(false); }}
+                  maxLength={50}
+                  className="text-2xl font-display text-[var(--charcoal)] border-b-2 border-[var(--masters-green)] bg-transparent outline-none"
+                  autoFocus
+                />
+                <button onClick={handleSaveTeamName} disabled={savingName} className="text-sm px-3 py-1 rounded-lg bg-[var(--masters-green)] text-white disabled:opacity-50">
+                  {savingName ? '...' : 'Save'}
+                </button>
+                <button onClick={() => setEditingName(false)} className="text-sm px-3 py-1 rounded-lg bg-gray-100 text-gray-600">
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 mt-2">
+                <h1 className="text-2xl font-display text-[var(--charcoal)]">
+                  {team.team_name}
+                </h1>
+                {isOwner && (
+                  <button
+                    onClick={() => { setTeamNameInput(team.team_name); setEditingName(true); }}
+                    className="text-gray-400 hover:text-[var(--masters-green)] transition-colors"
+                    aria-label="Edit team name"
+                  >
+                    ✏️
+                  </button>
+                )}
+              </div>
+            )}
             {team.last_score_sync && (
               <p className="text-xs mt-1 text-gray-400">
                 Last refresh: {format(new Date(team.last_score_sync), "EEE MMMM d 'at' h:mm a")}
