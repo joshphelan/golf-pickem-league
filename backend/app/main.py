@@ -74,7 +74,34 @@ async def startup_event():
     # Fix stuck tournaments: mark past tournaments as completed
     _correct_stuck_tournaments()
 
+    # Auto-import tournaments if DB is empty (for fresh PR environments)
+    if settings.ENABLE_AUTO_SYNC:
+        _seed_tournaments_if_empty()
+
     start_scheduler()
+
+
+def _seed_tournaments_if_empty():
+    """Import tournaments if DB has none (e.g., fresh PR environment)."""
+    from .database import get_db
+    from .models.tournament import Tournament
+    from .scheduler import import_upcoming_tournaments
+    import logging
+
+    logger = logging.getLogger(__name__)
+    db = next(get_db())
+    try:
+        count = db.query(Tournament).count()
+        if count == 0:
+            logger.info("No tournaments found — running initial import for fresh environment...")
+            import_upcoming_tournaments()
+            logger.info("Initial tournament import complete.")
+        else:
+            logger.info(f"Database has {count} tournaments — skipping initial import.")
+    except Exception as e:
+        logger.error(f"Error checking/seeding tournaments: {e}")
+    finally:
+        db.close()
 
 
 def _correct_stuck_tournaments():
