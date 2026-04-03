@@ -29,9 +29,13 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Unauthorized - clear token and redirect to login
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+      // Only redirect when the user had a stored token (session expired).
+      // Do NOT redirect on login failures — that would clear the error message.
+      const token = localStorage.getItem('token');
+      if (token) {
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
@@ -71,7 +75,17 @@ export interface League {
   tournament?: Tournament;
   draft_deadline: string;
   team_size: number;
+  scoring_count?: number | null;
   invite_code: string;
+  created_at: string;
+}
+
+export interface LeagueComment {
+  id: string;
+  league_id: string;
+  user_id: string;
+  username: string;
+  content: string;
   created_at: string;
 }
 
@@ -107,7 +121,7 @@ export interface TeamPlayer {
 
 export interface Team {
   id: string;
-  name: string;
+  team_name: string;
   league_id: string;
   user_id: string;
   owner?: User;
@@ -147,6 +161,11 @@ export const authAPI = {
     const response = await api.get('/auth/me');
     return response.data;
   },
+
+  updateProfile: async (data: { username: string }): Promise<User> => {
+    const response = await api.patch('/auth/me', data);
+    return response.data;
+  },
 };
 
 export interface LiveTournament {
@@ -158,6 +177,7 @@ export interface LiveTournament {
     end_date: string;
   } | null;
   current_round: number;
+  last_score_sync: string | null;
   leaderboard: {
     position: number;
     player_name: string;
@@ -220,6 +240,7 @@ export const leagueAPI = {
     tournament_id: string;
     draft_deadline: string;
     team_size: number;
+    scoring_count?: number | null;
   }): Promise<League> => {
     const response = await api.post('/leagues', data);
     return response.data;
@@ -246,6 +267,25 @@ export const leagueAPI = {
     });
     return response.data;
   },
+
+  updateLeague: async (leagueId: string, data: { draft_deadline?: string }): Promise<League> => {
+    const response = await api.patch(`/leagues/${leagueId}`, data);
+    return response.data;
+  },
+
+  getComments: async (leagueId: string): Promise<LeagueComment[]> => {
+    const response = await api.get(`/leagues/${leagueId}/comments`);
+    return response.data;
+  },
+
+  postComment: async (leagueId: string, content: string): Promise<LeagueComment> => {
+    const response = await api.post(`/leagues/${leagueId}/comments`, { content });
+    return response.data;
+  },
+
+  deleteComment: async (leagueId: string, commentId: string): Promise<void> => {
+    await api.delete(`/leagues/${leagueId}/comments/${commentId}`);
+  },
 };
 
 // Team API
@@ -269,6 +309,11 @@ export const teamAPI = {
 
   getAvailablePlayers: async (teamId: string): Promise<Player[]> => {
     const response = await api.get(`/teams/${teamId}/available-players`);
+    return response.data;
+  },
+
+  updateTeam: async (teamId: string, data: { team_name: string }): Promise<Team> => {
+    const response = await api.patch(`/teams/${teamId}`, data);
     return response.data;
   },
 };

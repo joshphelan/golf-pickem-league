@@ -56,9 +56,8 @@ def calculate_team_score(
     if not team_players:
         return None
     
-    total_score = 0
-    players_with_scores = 0
-    
+    collected_scores = []
+
     for tp in team_players:
         # Get player's score for this round, falling back to their latest available round
         score = (
@@ -81,17 +80,22 @@ def calculate_team_score(
                 .first()
             )
 
-        if score and score.total_score is not None:
-            total_score += score.total_score
         # Player has no tournament records — did not participate, count as 0
-        players_with_scores += 1
+        collected_scores.append(score.total_score if (score and score.total_score is not None) else 0)
 
-    # Only return score if all players have scores
-    expected_players = len(team_players)
-    if players_with_scores < expected_players:
+    # Only return score if we have data for all players
+    if len(collected_scores) < len(team_players):
         return None  # Incomplete scores
-    
-    return total_score
+
+    # Apply best-N logic if scoring_count is configured
+    n = league.scoring_count
+    if n and n < len(collected_scores):
+        # Sort ascending (lower = better in golf), keep the best N
+        scores_to_sum = sorted(collected_scores)[:n]
+    else:
+        scores_to_sum = collected_scores
+
+    return sum(scores_to_sum)
 
 
 def calculate_league_standings(

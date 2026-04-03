@@ -67,6 +67,12 @@ export default function Navbar() {
                 ADMIN
               </span>
             )}
+            <Link
+              href="/profile"
+              className="text-white/60 hover:text-white text-sm transition-colors"
+            >
+              Profile
+            </Link>
             <button
               onClick={handleLogout}
               className="text-white/60 hover:text-white text-sm transition-colors"
@@ -139,12 +145,21 @@ export default function Navbar() {
                   </span>
                 )}
               </div>
-              <button
-                onClick={handleLogout}
-                className="text-white/60 hover:text-white text-sm transition-colors"
-              >
-                Sign Out
-              </button>
+              <div className="flex items-center gap-4">
+                <Link
+                  href="/profile"
+                  onClick={() => setMenuOpen(false)}
+                  className="text-white/60 hover:text-white text-sm transition-colors"
+                >
+                  Profile
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="text-white/60 hover:text-white text-sm transition-colors"
+                >
+                  Sign Out
+                </button>
+              </div>
             </div>
           </div>
         </div>

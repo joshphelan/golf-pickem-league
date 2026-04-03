@@ -21,6 +21,7 @@ class League(Base):
     
     max_members = Column(Integer, default=10, nullable=False)
     team_size = Column(Integer, default=4, nullable=False)  # Number of golfers per team
+    scoring_count = Column(Integer, nullable=True)  # How many best scores to count (NULL = all)
     
     status = Column(String, default='draft', nullable=False)  # 'draft', 'active', 'completed'
     draft_deadline = Column(DateTime(timezone=True), nullable=False)
@@ -33,6 +34,7 @@ class League(Base):
     tournament = relationship("Tournament", back_populates="leagues")
     admin = relationship("User", back_populates="leagues", foreign_keys=[admin_id])
     teams = relationship("Team", back_populates="league", cascade="all, delete-orphan")
+    comments = relationship("LeagueComment", back_populates="league", cascade="all, delete-orphan", order_by="LeagueComment.created_at")
     
     # Constraints
     __table_args__ = (
@@ -94,4 +96,24 @@ class TeamPlayer(Base):
     
     def __repr__(self):
         return f"<TeamPlayer team={self.team_id} player={self.player_id}>"
+
+
+class LeagueComment(Base):
+    """Comment posted by a league member in a league's chat."""
+    __tablename__ = "league_comments"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    league_id = Column(UUID(as_uuid=True), ForeignKey("leagues.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+
+    content = Column(String(1000), nullable=False)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    # Relationships
+    league = relationship("League", back_populates="comments")
+    user = relationship("User")
+
+    def __repr__(self):
+        return f"<LeagueComment league={self.league_id} user={self.user_id}>"
 

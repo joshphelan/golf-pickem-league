@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { isAuthenticated } from '@/lib/auth';
+import Navbar from '@/components/Navbar';
 
 export default function AboutPage() {
   const [authed, setAuthed] = useState(false);
@@ -13,6 +14,7 @@ export default function AboutPage() {
 
   return (
     <div className="min-h-screen bg-[var(--cream)]">
+      <Navbar />
       {/* Header */}
       <div className="bg-gradient-to-br from-[var(--masters-green)] to-[var(--masters-green-dark)] border-b-[3px] border-[var(--masters-gold)]">
         <div className="max-w-3xl mx-auto px-6 py-14 text-center">

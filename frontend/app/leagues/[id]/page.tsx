@@ -7,10 +7,11 @@ import Navbar from '@/components/Navbar';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorMessage from '@/components/ErrorMessage';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { leagueAPI, tournamentAPI, configAPI, League, LeagueStanding, PublicConfig } from '@/lib/api';
+import { leagueAPI, tournamentAPI, configAPI, League, LeagueStanding, LeagueComment, PublicConfig } from '@/lib/api';
 import { getUser } from '@/lib/auth';
 import { format } from 'date-fns';
 import { formatScore, getScoreStyle } from '@/lib/formatScore';
+import { parseLocalDate } from '@/lib/parseDate';
 
 interface StandingsResponse {
   league_id: string;
@@ -37,6 +38,12 @@ export default function LeagueDetailsPage() {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [copied, setCopied] = useState(false);
+  const [editingDeadline, setEditingDeadline] = useState(false);
+  const [deadlineInput, setDeadlineInput] = useState('');
+  const [savingDeadline, setSavingDeadline] = useState(false);
+  const [comments, setComments] = useState<LeagueComment[]>([]);
+  const [commentText, setCommentText] = useState('');
+  const [postingComment, setPostingComment] = useState(false);
   const params = useParams();
   const leagueId = params.id as string;
   const user = getUser();
@@ -44,6 +51,7 @@ export default function LeagueDetailsPage() {
   useEffect(() => {
     loadLeagueData();
     configAPI.getPublicConfig().then(setConfig).catch(() => {});
+    leagueAPI.getComments(leagueId).then(setComments).catch(() => {});
   }, []);
 
   const loadLeagueData = async () => {
@@ -106,6 +114,47 @@ export default function LeagueDetailsPage() {
     }
   };
 
+  const handleSaveDeadline = async () => {
+    if (!deadlineInput) return;
+    setSavingDeadline(true);
+    try {
+      const updated = await leagueAPI.updateLeague(leagueId, {
+        draft_deadline: new Date(deadlineInput).toISOString(),
+      });
+      setLeague(updated);
+      setEditingDeadline(false);
+      setSuccessMessage('Draft deadline updated');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to update deadline');
+    } finally {
+      setSavingDeadline(false);
+    }
+  };
+
+  const handlePostComment = async () => {
+    if (!commentText.trim()) return;
+    setPostingComment(true);
+    try {
+      const comment = await leagueAPI.postComment(leagueId, commentText.trim());
+      setComments((prev) => [...prev, comment]);
+      setCommentText('');
+    } catch {
+      // silently ignore post errors
+    } finally {
+      setPostingComment(false);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    try {
+      await leagueAPI.deleteComment(leagueId, commentId);
+      setComments((prev) => prev.filter((c) => c.id !== commentId));
+    } catch {
+      // silently ignore delete errors
+    }
+  };
+
   const isLeagueOwner = user?.id === league?.admin_id || user?.is_owner;
   const userTeam = standingsData?.standings.find((s) => s.owner_name === user?.username);
   const standings = standingsData?.standings || [];
@@ -158,9 +207,9 @@ export default function LeagueDetailsPage() {
                       {league.tournament?.name}
                       {league.tournament?.start_date && (
                         <span className="ml-2">
-                          {format(new Date(league.tournament.start_date), 'MMM d')} -{' '}
+                          {format(parseLocalDate(league.tournament.start_date), 'MMM d')} -{' '}
                           {league.tournament?.end_date &&
-                            format(new Date(league.tournament.end_date), 'd, yyyy')}
+                            format(parseLocalDate(league.tournament.end_date), 'd, yyyy')}
                         </span>
                       )}
                     </p>
@@ -191,9 +240,42 @@ export default function LeagueDetailsPage() {
                   <p className="text-xs uppercase tracking-wider text-gray-400">
                     Draft Deadline
                   </p>
-                  <p className="text-sm text-[var(--charcoal)]">
-                    {format(new Date(league.draft_deadline), 'MMM d, h:mm a')}
-                  </p>
+                  {editingDeadline ? (
+                    <div className="flex items-center gap-2 mt-1">
+                      <input
+                        type="datetime-local"
+                        value={deadlineInput}
+                        onChange={(e) => setDeadlineInput(e.target.value)}
+                        min={new Date().toISOString().slice(0, 16)}
+                        className="text-sm border border-[#e5e2d3] rounded-lg px-2 py-1"
+                      />
+                      <button onClick={handleSaveDeadline} disabled={savingDeadline} className="text-xs px-2 py-1 rounded bg-[var(--masters-green)] text-white disabled:opacity-50">
+                        {savingDeadline ? '...' : 'Save'}
+                      </button>
+                      <button onClick={() => setEditingDeadline(false)} className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-600">
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm text-[var(--charcoal)]">
+                        {format(new Date(league.draft_deadline), 'MMM d, h:mm a')}
+                      </p>
+                      {isLeagueOwner && (
+                        <button
+                          onClick={() => {
+                            const d = new Date(league.draft_deadline);
+                            setDeadlineInput(format(d, "yyyy-MM-dd'T'HH:mm"));
+                            setEditingDeadline(true);
+                          }}
+                          className="text-gray-400 hover:text-[var(--masters-green)] transition-colors text-xs"
+                          aria-label="Edit draft deadline"
+                        >
+                          ✏️
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -329,6 +411,57 @@ export default function LeagueDetailsPage() {
                   ))}
                 </div>
               )}
+
+              {/* League Chat */}
+              <div className="mt-10">
+                <h2 className="text-lg font-display text-[var(--charcoal)] mb-4">League Chat</h2>
+                <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                  {comments.length === 0 ? (
+                    <p className="px-5 py-6 text-sm text-gray-400">No messages yet. Be the first to post!</p>
+                  ) : (
+                    <div className="divide-y divide-[#f0ede3]">
+                      {comments.map((c) => (
+                        <div key={c.id} className="px-5 py-3 flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <span className="text-xs font-medium text-[var(--masters-green)] mr-2">{c.username}</span>
+                            <span className="text-xs text-gray-400">
+                              {format(new Date(c.created_at), "MMM d 'at' h:mm a")}
+                            </span>
+                            <p className="text-sm text-[var(--charcoal)] mt-0.5 break-words">{c.content}</p>
+                          </div>
+                          {(user?.id === c.user_id || isLeagueOwner) && (
+                            <button
+                              onClick={() => handleDeleteComment(c.id)}
+                              className="text-xs text-gray-300 hover:text-red-400 transition-colors flex-shrink-0 mt-0.5"
+                              aria-label="Delete comment"
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="px-5 py-3 border-t border-[#f0ede3] flex gap-2">
+                    <input
+                      type="text"
+                      value={commentText}
+                      onChange={(e) => setCommentText(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handlePostComment(); } }}
+                      placeholder="Add a message..."
+                      maxLength={1000}
+                      className="flex-1 px-3 py-2 text-sm border border-[#e5e2d3] rounded-lg transition-all"
+                    />
+                    <button
+                      onClick={handlePostComment}
+                      disabled={postingComment || !commentText.trim()}
+                      className="px-4 py-2 text-sm font-medium disabled:opacity-40 rounded-lg bg-[var(--masters-green)] text-white transition-all hover:bg-[var(--masters-green-dark)]"
+                    >
+                      Post
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </>
         )}

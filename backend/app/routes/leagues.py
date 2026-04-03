@@ -13,10 +13,14 @@ from ..models.user import User
 from ..schemas.league import (
     LeagueCreate,
     LeagueResponse,
-    LeagueDetailResponse
+    LeagueDetailResponse,
+    LeagueUpdate,
+    LeagueCommentCreate,
+    LeagueCommentResponse,
 )
 from ..utils.dependencies import get_current_user, require_league_admin
 from ..services.scoring_service import calculate_league_standings
+from ..models.league import LeagueComment
 
 router = APIRouter(prefix="/api/leagues", tags=["Leagues"])
 
@@ -71,6 +75,7 @@ def create_league(
         invite_code=invite_code,
         max_members=league_data.max_members,
         team_size=league_data.team_size,
+        scoring_count=league_data.scoring_count,
         draft_deadline=league_data.draft_deadline,
         status='draft'
     )
@@ -356,4 +361,133 @@ def get_league_standings(
         } if tournament else None,
         "standings": standings
     }
+
+
+@router.patch("/{league_id}", response_model=LeagueDetailResponse)
+def update_league(
+    league_id: UUID,
+    update_data: LeagueUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Update league settings (draft deadline).
+    League admin or app owner only.
+    """
+    league = db.query(League).filter(League.id == league_id).first()
+    if not league:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="League not found")
+
+    if league.admin_id != current_user.id and not current_user.is_owner:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only the league admin can update this league")
+
+    if update_data.draft_deadline is not None:
+        league.draft_deadline = update_data.draft_deadline
+
+    db.commit()
+    db.refresh(league)
+
+    member_count = db.query(Team).filter(Team.league_id == league_id).count()
+    league_dict = LeagueDetailResponse.model_validate(league).model_dump()
+    league_dict['tournament'] = league.tournament
+    league_dict['member_count'] = member_count
+    return league_dict
+
+
+@router.get("/{league_id}/comments", response_model=List[LeagueCommentResponse])
+def get_league_comments(
+    league_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get all comments for a league. Must be a member."""
+    league = db.query(League).filter(League.id == league_id).first()
+    if not league:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="League not found")
+
+    is_member = db.query(Team).filter(
+        Team.league_id == league_id,
+        Team.user_id == current_user.id
+    ).first()
+    if not is_member:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not a member of this league")
+
+    comments = db.query(LeagueComment).filter(
+        LeagueComment.league_id == league_id
+    ).order_by(LeagueComment.created_at.asc()).all()
+
+    return [
+        {
+            "id": c.id,
+            "league_id": c.league_id,
+            "user_id": c.user_id,
+            "username": c.user.username if c.user else "Unknown",
+            "content": c.content,
+            "created_at": c.created_at,
+        }
+        for c in comments
+    ]
+
+
+@router.post("/{league_id}/comments", response_model=LeagueCommentResponse, status_code=status.HTTP_201_CREATED)
+def post_league_comment(
+    league_id: UUID,
+    comment_data: LeagueCommentCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Post a comment to a league chat. Must be a member."""
+    league = db.query(League).filter(League.id == league_id).first()
+    if not league:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="League not found")
+
+    is_member = db.query(Team).filter(
+        Team.league_id == league_id,
+        Team.user_id == current_user.id
+    ).first()
+    if not is_member:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not a member of this league")
+
+    comment = LeagueComment(
+        league_id=league_id,
+        user_id=current_user.id,
+        content=comment_data.content,
+    )
+    db.add(comment)
+    db.commit()
+    db.refresh(comment)
+
+    return {
+        "id": comment.id,
+        "league_id": comment.league_id,
+        "user_id": comment.user_id,
+        "username": current_user.username,
+        "content": comment.content,
+        "created_at": comment.created_at,
+    }
+
+
+@router.delete("/{league_id}/comments/{comment_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_league_comment(
+    league_id: UUID,
+    comment_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Delete a comment. Own comment or league admin only."""
+    comment = db.query(LeagueComment).filter(
+        LeagueComment.id == comment_id,
+        LeagueComment.league_id == league_id
+    ).first()
+    if not comment:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
+
+    league = db.query(League).filter(League.id == league_id).first()
+    is_admin = league and (league.admin_id == current_user.id or current_user.is_owner)
+
+    if comment.user_id != current_user.id and not is_admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You cannot delete this comment")
+
+    db.delete(comment)
+    db.commit()
 
