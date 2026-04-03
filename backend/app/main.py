@@ -76,16 +76,16 @@ async def startup_event():
 
     # Auto-import tournaments if DB is empty (for fresh PR environments)
     if settings.ENABLE_AUTO_SYNC:
-        _seed_tournaments_if_empty()
+        await _seed_tournaments_if_empty()
 
     start_scheduler()
 
 
-def _seed_tournaments_if_empty():
+async def _seed_tournaments_if_empty():
     """Import tournaments if DB has none (e.g., fresh PR environment)."""
     from .database import get_db
     from .models.tournament import Tournament
-    from .scheduler import import_upcoming_tournaments
+    from .scheduler import _import_upcoming_tournaments_async
     import logging
 
     logger = logging.getLogger(__name__)
@@ -94,7 +94,7 @@ def _seed_tournaments_if_empty():
         count = db.query(Tournament).count()
         if count == 0:
             logger.info("No tournaments found — running initial import for fresh environment...")
-            import_upcoming_tournaments()
+            await _import_upcoming_tournaments_async()
             logger.info("Initial tournament import complete.")
         else:
             logger.info(f"Database has {count} tournaments — skipping initial import.")
