@@ -323,8 +323,8 @@ export default function TeamDetailsPage() {
         {/* Draft Modal */}
         {showDraftModal && (
           <div className="fixed inset-0 flex items-end sm:items-center justify-center p-0 sm:p-4 z-50 bg-black/50 backdrop-blur-sm">
-            <div className="w-full sm:max-w-lg sm:max-h-[80vh] max-h-[90vh] overflow-hidden bg-[var(--cream)] rounded-t-2xl sm:rounded-2xl shadow-2xl">
-              <div className="px-5 py-4 flex justify-between items-center bg-[var(--masters-green)] border-b-2 border-[var(--masters-gold)] sm:rounded-t-2xl">
+            <div className="w-full h-[100dvh] sm:h-auto sm:max-w-lg sm:max-h-[80vh] overflow-hidden bg-[var(--cream)] sm:rounded-2xl shadow-2xl flex flex-col">
+              <div className="px-5 py-4 flex justify-between items-center bg-[var(--masters-green)] border-b-2 border-[var(--masters-gold)] sm:rounded-t-2xl flex-shrink-0">
                 <div>
                   <h2 className="text-lg text-white font-display">
                     Draft Player
@@ -341,53 +341,61 @@ export default function TeamDetailsPage() {
                 </button>
               </div>
 
-              <div className="p-5">
+              <div className="px-5 pt-4 pb-2 flex-shrink-0">
                 <input
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search players..."
-                  className="w-full px-4 py-2.5 border border-[#e5e2d3] rounded-lg text-sm mb-4"
+                  className="w-full px-4 py-2.5 border border-[#e5e2d3] rounded-lg text-sm"
                 />
+              </div>
 
-                <div className="overflow-y-auto max-h-[50vh]">
-                  {filteredPlayers.length === 0 ? (
-                    <p className="text-center py-8 text-gray-400">
-                      No available players found.
-                    </p>
-                  ) : (
-                    <div>
-                      {filteredPlayers.map((player, index) => (
-                        <div
-                          key={player.player_id}
-                          className="flex justify-between items-center py-3 px-2 rounded-lg hover:bg-white transition-colors"
-                          style={{
-                            borderBottom:
-                              index < filteredPlayers.length - 1 ? '1px solid #f0ede3' : 'none',
-                          }}
-                        >
-                          <div>
-                            <p className="font-medium text-[var(--charcoal)]">
-                              {player.first_name} {player.last_name}
-                            </p>
-                            {player.is_amateur && (
-                              <span className="text-xs text-gray-400">
-                                Amateur
-                              </span>
-                            )}
-                          </div>
-                          <button
-                            onClick={() => handleDraftPlayer(player.id)}
-                            disabled={drafting}
-                            className="px-4 py-1.5 text-sm font-medium disabled:opacity-50 rounded-lg bg-[var(--masters-green)] text-white transition-all hover:bg-[var(--masters-green-dark)] hover:shadow-sm"
-                          >
-                            {drafting ? '...' : 'Draft'}
-                          </button>
+              <div className="flex-1 overflow-y-auto px-5 pb-5">
+                {filteredPlayers.length === 0 ? (
+                  <p className="text-center py-8 text-gray-400">
+                    No available players found.
+                  </p>
+                ) : (
+                  <div>
+                    {filteredPlayers.map((player, index) => (
+                      <div
+                        key={player.player_id}
+                        className="flex items-center gap-3 py-3 px-2 rounded-lg hover:bg-white transition-colors"
+                        style={{
+                          borderBottom:
+                            index < filteredPlayers.length - 1 ? '1px solid #f0ede3' : 'none',
+                        }}
+                      >
+                        <div className="w-10 h-10 rounded-full bg-gray-200 flex-shrink-0 overflow-hidden">
+                          <img
+                            src={`https://pga-tour-res.cloudinary.com/image/upload/c_thumb,g_face,z_0.7,q_auto,f_auto,dpr_2.0,w_40,h_40/headshots_${player.player_id}`}
+                            alt=""
+                            className="w-full h-full object-cover"
+                            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
+                          />
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-[var(--charcoal)] truncate">
+                            {player.first_name} {player.last_name}
+                          </p>
+                          {player.is_amateur && (
+                            <span className="text-xs text-gray-400">
+                              Amateur
+                            </span>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => handleDraftPlayer(player.id)}
+                          disabled={drafting}
+                          className="px-4 py-1.5 text-sm font-medium disabled:opacity-50 rounded-lg bg-[var(--masters-green)] text-white transition-all hover:bg-[var(--masters-green-dark)] hover:shadow-sm flex-shrink-0"
+                        >
+                          {drafting ? '...' : 'Draft'}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
