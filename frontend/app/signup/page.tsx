@@ -105,7 +105,7 @@ export default function SignupPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm transition-all"
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-base sm:text-sm transition-all"
             />
           </div>
 
@@ -119,7 +119,7 @@ export default function SignupPage() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm transition-all"
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-base sm:text-sm transition-all"
             />
           </div>
 
@@ -134,7 +134,7 @@ export default function SignupPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={8}
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm transition-all"
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-base sm:text-sm transition-all"
             />
           </div>
 
@@ -149,7 +149,7 @@ export default function SignupPage() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
               minLength={8}
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm transition-all"
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-base sm:text-sm transition-all"
             />
           </div>
 

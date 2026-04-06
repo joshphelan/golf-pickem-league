@@ -121,7 +121,7 @@ function CreateLeagueForm() {
                     onChange={(e) => setName(e.target.value)}
                     required
                     placeholder="e.g., Friends & Family Golf League"
-                    className="w-full px-4 py-2.5 border border-[#e5e2d3] rounded-lg text-sm transition-all"
+                    className="w-full px-4 py-2.5 border border-[#e5e2d3] rounded-lg text-base sm:text-sm transition-all"
                   />
                 </div>
 
@@ -137,7 +137,7 @@ function CreateLeagueForm() {
                     value={tournamentId}
                     onChange={(e) => handleTournamentChange(e.target.value)}
                     required
-                    className="w-full px-4 py-2.5 border border-[#e5e2d3] rounded-lg text-sm transition-all"
+                    className="w-full px-4 py-2.5 border border-[#e5e2d3] rounded-lg text-base sm:text-sm transition-all"
                   >
                     <option value="">Select a tournament</option>
                     {tournaments.map((tournament) => (
@@ -180,7 +180,7 @@ function CreateLeagueForm() {
                         }}
                         required
                         min={new Date().toISOString().split('T')[0]}
-                        className="w-full px-4 py-2.5 border border-[#e5e2d3] rounded-lg text-sm transition-all"
+                        className="w-full px-4 py-2.5 border border-[#e5e2d3] rounded-lg text-base sm:text-sm transition-all"
                       />
                     </div>
                     <div>
@@ -193,7 +193,7 @@ function CreateLeagueForm() {
                           setDraftDeadline(`${date}T${e.target.value}`);
                         }}
                         required
-                        className="w-full px-4 py-2.5 border border-[#e5e2d3] rounded-lg text-sm transition-all"
+                        className="w-full px-4 py-2.5 border border-[#e5e2d3] rounded-lg text-base sm:text-sm transition-all"
                       />
                     </div>
                   </div>
@@ -219,7 +219,7 @@ function CreateLeagueForm() {
                         if (scoringCount > val) setScoringCount(val);
                       }}
                       required
-                      className="w-full px-4 py-2.5 border border-[#e5e2d3] rounded-lg text-sm transition-all"
+                      className="w-full px-4 py-2.5 border border-[#e5e2d3] rounded-lg text-base sm:text-sm transition-all"
                     >
                       {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
                         <option key={n} value={n}>{n} golfers</option>
@@ -238,7 +238,7 @@ function CreateLeagueForm() {
                       value={scoringCount}
                       onChange={(e) => setScoringCount(parseInt(e.target.value))}
                       required
-                      className="w-full px-4 py-2.5 border border-[#e5e2d3] rounded-lg text-sm transition-all"
+                      className="w-full px-4 py-2.5 border border-[#e5e2d3] rounded-lg text-base sm:text-sm transition-all"
                     >
                       {Array.from({ length: teamSize }, (_, i) => i + 1).map((n) => (
                         <option key={n} value={n}>{n} best score{n > 1 ? 's' : ''}</option>

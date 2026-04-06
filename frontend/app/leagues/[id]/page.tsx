@@ -247,7 +247,7 @@ export default function LeagueDetailsPage() {
                         value={deadlineInput}
                         onChange={(e) => setDeadlineInput(e.target.value)}
                         min={new Date().toISOString().slice(0, 16)}
-                        className="text-sm border border-[#e5e2d3] rounded-lg px-2 py-1"
+                        className="text-base sm:text-sm border border-[#e5e2d3] rounded-lg px-2 py-1"
                       />
                       <button onClick={handleSaveDeadline} disabled={savingDeadline} className="text-xs px-2 py-1 rounded bg-[var(--masters-green)] text-white disabled:opacity-50">
                         {savingDeadline ? '...' : 'Save'}
@@ -461,7 +461,7 @@ export default function LeagueDetailsPage() {
                       onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handlePostComment(); } }}
                       placeholder="Add a message..."
                       maxLength={1000}
-                      className="flex-1 px-3 py-2 text-sm border border-[#e5e2d3] rounded-lg transition-all"
+                      className="flex-1 px-3 py-2 text-base sm:text-sm border border-[#e5e2d3] rounded-lg transition-all"
                     />
                     <button
                       onClick={handlePostComment}

@@ -88,7 +88,7 @@ export default function DashboardPage() {
                         onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
                         placeholder="XXXXXXXX"
                         maxLength={8}
-                        className="w-full sm:w-36 px-3 py-2 text-sm font-mono tracking-widest border-0 rounded-lg bg-white/95"
+                        className="w-full sm:w-36 px-3 py-2 text-base sm:text-sm font-mono tracking-widest border-0 rounded-lg bg-white/95"
                       />
                       <button
                         onClick={handleJoinLeague}

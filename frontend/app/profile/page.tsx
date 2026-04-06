@@ -77,7 +77,7 @@ export default function ProfilePage() {
                   required
                   minLength={3}
                   maxLength={50}
-                  className="w-full px-4 py-2.5 border border-[#e5e2d3] rounded-lg text-sm transition-all"
+                  className="w-full px-4 py-2.5 border border-[#e5e2d3] rounded-lg text-base sm:text-sm transition-all"
                 />
               </div>
 
