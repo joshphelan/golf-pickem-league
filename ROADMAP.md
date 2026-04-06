@@ -1,8 +1,25 @@
 # Golf Pick'em League - Roadmap
 
-## Current Session Status (Mar 5, 2026)
+## Current Status (Apr 6, 2026)
 
-### Recently Completed
+### Recently Completed (PR #7 — League Enhancements, Apr 2026)
+- [x] Pick N, count best M scoring — leagues can configure `scoring_count` (e.g., pick 6, best 3 count)
+- [x] League chat — per-league comment section with post/delete
+- [x] Profile page (`/profile`) — change username with uniqueness validation
+- [x] Team name editing — inline pencil-icon edit on team page
+- [x] Draft deadline editing — inline edit for league admin on league page
+- [x] "Last updated" on team page now shows actual `last_score_sync` (not page load time)
+- [x] Login error message no longer disappears instantly (axios 401 interceptor fix)
+- [x] Navbar added to About page
+- [x] Tournament date off-by-one fix (`parseLocalDate` utility)
+- [x] Dashboard live leaderboard shows `last_score_sync` timestamp
+- [x] Fixed Team interface `name` vs `team_name` field mismatch
+- [x] Auto-import tournaments on startup for fresh environments
+
+### Completed (PR #6 — PWA, Mar 2026)
+- [x] PWA standalone support (`manifest.ts`)
+
+### Earlier Completed
 - [x] UI modernization pass — rounded corners, shadows, pill badges, card-based layouts, hover effects
 - [x] Typography split — Georgia for display headings, Geist Sans for body/UI
 - [x] Inline styles migrated to Tailwind classes + CSS variables
@@ -10,8 +27,6 @@
 - [x] Navbar: shadow, animated mobile menu, pill role badges
 - [x] Draft modal: rounded, backdrop blur, bottom-sheet on mobile
 - [x] Loading spinner branded green, error messages rounded
-
-### Previous Session Fixes
 - [x] Disable FastAPI docs/redoc/openapi endpoints in production
 - [x] Auto-correct stuck tournaments to "completed" on startup
 - [x] Public config endpoint (`/api/config/public`) for dynamic sync interval display
@@ -32,48 +47,28 @@
 
 ---
 
-## Bugs / Critical Fixes
-
-1. **"Last updated" on team page still shows page load time**
-   - Same issue that was fixed on the league standings page
-   - Team detail page (`/teams/[id]`) needs to use actual score sync time from backend
-   - Needs `last_score_sync` added to team endpoint response
-
-2. **Login error message disappears instantly**
-   - Red banner "incorrect user or password" shows briefly then vanishes
-   - Should persist until dismissed or new action taken
-
-3. **Add Navbar to About page**
-   - About page currently has no navigation bar
-   - Should show the same Navbar as authenticated pages (or a simplified public nav for unauthenticated users)
-
----
-
 ## UX / UI Improvements
 
-4. **UI redesign / next-level polish**
+1. **UI redesign / next-level polish**
    - Revisit overall look and feel — explore bolder design directions
    - Consider: page transitions/animations, richer card designs, more distinctive visual identity
    - Potential areas: hero section redesign, leaderboard presentation, dashboard layout
    - Evaluate adding subtle textures, background patterns, or gradient mesh effects
    - Use Playwright for visual testing across pages during iteration
 
-5. **About page — clarify user roles and sign-up flow**
+2. **About page — clarify user roles and sign-up flow**
    - Explain that signing up gives you the ability to **join** leagues (via invite code), but not create them
    - To gain the ability to **create leagues**, you need to become a **League Admin**
    - Add a contact form (or mailto link with hidden/obfuscated email) to request League Admin access from the site owner
    - Consider a simple form that sends an email without exposing the address (e.g., serverless function or backend endpoint)
 
-6. **About page — personal section / credits**
+3. **About page — personal section / credits**
    - Section about who built this and why (developer bio / "About Me")
    - Link to GitHub repo
    - Could be a separate section on the existing About page, or a dedicated `/about/developer` page
    - Tech stack overview (Next.js, FastAPI, PostgreSQL, Railway, etc.)
 
-7. **Draft deadline editing**
-   - Ability to change draft deadline after league creation
-
-8. **Tournament display enhancements**
+4. **Tournament display enhancements**
    - Show venue/course info where available
    - Better date formatting throughout
 
@@ -81,46 +76,46 @@
 
 ## New Features
 
-9. **League Admin request flow**
+5. **League Admin request flow**
    - Contact form on About page to request League Admin status
    - Backend endpoint to send email to site owner (email hidden from client)
    - Include requester's username and reason
    - Owner receives email and can approve via admin panel
 
-10. **Password reset**
+6. **Password reset**
     - Send reset email to user
     - Requires email service integration
 
-11. **Permission management**
+7. **Permission management**
     - Ability to edit permission levels outside owner portal
     - Prevent lockout scenarios
 
-12. **Custom domain**
+8. **Custom domain**
     - Configure custom domain for production
 
 ---
 
 ## Future Enhancements
 
-13. **Player avatar images**
+9. **Player avatar images**
     - Display player initials or photos in roster/standings views
 
-14. **Hole-by-hole progress indicators**
+10. **Hole-by-hole progress indicators**
     - Show which hole each player is on during live rounds
 
-15. **Real-time auto-refresh**
+11. **Real-time auto-refresh**
     - WebSocket or polling for live score updates
     - Visual indicator when scores are being refreshed
 
-16. **Dark mode toggle**
+12. **Dark mode toggle**
     - Proper dark mode with user preference and system detection
 
-17. **Historical league stats**
+13. **Historical league stats**
     - Win/loss record across leagues
     - Best picks, worst picks analysis
     - Head-to-head records
 
-18. **Player Insights — ML-powered predictions and analytics**
+14. **Player Insights — ML-powered predictions and analytics**
     - **Phase 1: Model & data pipeline**
       - Collect and store historical player/tournament data (course history, recent form, strokes gained, field strength)
       - Build ML model to predict player tournament scores (e.g., XGBoost, LightGBM, or neural net)
