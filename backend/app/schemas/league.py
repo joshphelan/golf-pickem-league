@@ -11,7 +11,7 @@ class LeagueCreate(BaseModel):
     """Schema for creating a league."""
     tournament_id: UUID
     name: str = Field(..., min_length=3, max_length=100)
-    max_members: int = Field(default=10, ge=2, le=50)
+    max_members: int = Field(default=50, ge=2, le=50)
     team_size: int = Field(default=4, ge=1, le=10)
     scoring_count: Optional[int] = Field(default=None, ge=1, le=10)
     draft_deadline: datetime

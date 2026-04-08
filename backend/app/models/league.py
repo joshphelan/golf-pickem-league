@@ -19,7 +19,7 @@ class League(Base):
     name = Column(String, nullable=False)
     invite_code = Column(String(8), unique=True, nullable=False, index=True)
     
-    max_members = Column(Integer, default=10, nullable=False)
+    max_members = Column(Integer, default=50, nullable=False)
     team_size = Column(Integer, default=4, nullable=False)  # Number of golfers per team
     scoring_count = Column(Integer, nullable=True)  # How many best scores to count (NULL = all)
     
