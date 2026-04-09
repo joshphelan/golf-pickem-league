@@ -29,3 +29,5 @@ pytz>=2023.3
 # Background Scheduler
 apscheduler>=3.10.0
 
+# Email (Resend)
+resend>=2.0.0
