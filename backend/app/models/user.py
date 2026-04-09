@@ -23,6 +23,10 @@ class User(Base):
     is_owner = Column(Boolean, default=False, nullable=False)  # Can manage users
     is_primary_owner = Column(Boolean, default=False, nullable=False)  # App owner (protected)
     
+    # Password reset
+    password_reset_token = Column(String, nullable=True)
+    password_reset_token_expires = Column(DateTime(timezone=True), nullable=True)
+
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

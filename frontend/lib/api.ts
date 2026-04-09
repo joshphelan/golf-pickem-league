@@ -166,6 +166,21 @@ export const authAPI = {
     const response = await api.patch('/auth/me', data);
     return response.data;
   },
+
+  requestPasswordReset: async (email: string): Promise<{ message: string }> => {
+    const response = await api.post('/auth/password-reset/request', { email });
+    return response.data;
+  },
+
+  confirmPasswordReset: async (token: string, new_password: string): Promise<{ message: string }> => {
+    const response = await api.post('/auth/password-reset/confirm', { token, new_password });
+    return response.data;
+  },
+
+  changePassword: async (current_password: string, new_password: string): Promise<{ message: string }> => {
+    const response = await api.patch('/auth/me/password', { current_password, new_password });
+    return response.data;
+  },
 };
 
 export interface LiveTournament {

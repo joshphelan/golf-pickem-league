@@ -24,6 +24,15 @@ class Settings(BaseSettings):
     
     # Primary Owner (optional - first user is auto-primary owner)
     PRIMARY_OWNER_EMAIL: Optional[str] = None
+
+    # Email (SMTP) - for password reset emails
+    # Gmail: use smtp.gmail.com:587 with an App Password (requires 2FA)
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USER: Optional[str] = None      # your-email@gmail.com
+    SMTP_PASSWORD: Optional[str] = None  # 16-char Gmail App Password
+    SMTP_FROM_EMAIL: Optional[str] = None  # defaults to SMTP_USER if not set
+    FRONTEND_URL: str = "http://localhost:3000"
     
     # Scheduler Settings
     ENABLE_AUTO_SYNC: bool = False  # Enable automatic score syncing (default: disabled for dev)
