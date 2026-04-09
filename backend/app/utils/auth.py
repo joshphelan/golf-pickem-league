@@ -1,4 +1,5 @@
 """JWT token creation and verification utilities."""
+import secrets
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 from jose import JWTError, jwt
@@ -17,6 +18,11 @@ def hash_password(password: str) -> str:
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against a hash."""
     return pwd_context.verify(plain_password, hashed_password)
+
+
+def generate_reset_token() -> str:
+    """Generate a secure random password reset token."""
+    return secrets.token_urlsafe(32)
 
 
 def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:

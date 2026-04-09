@@ -1,13 +1,21 @@
 """Authentication endpoints."""
+import logging
+from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 
 from ..database import get_db
 from ..models.user import User
-from ..schemas.auth import UserCreate, UserLogin, Token, UserResponse
-from ..utils.auth import hash_password, verify_password, create_access_token
+from ..schemas.auth import (
+    UserCreate, UserLogin, Token, UserResponse,
+    PasswordResetRequest, PasswordResetConfirm, ChangePasswordRequest,
+)
+from ..utils.auth import hash_password, verify_password, create_access_token, generate_reset_token
 from ..utils.dependencies import get_current_user, require_owner, require_league_admin
+from ..utils.email import send_password_reset_email
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
@@ -350,6 +358,106 @@ def revoke_owner_status(
     user.is_owner = False
     db.commit()
     db.refresh(user)
-    
+
     return user
+
+
+# ── Password reset (unauthenticated) ─────────────────────────────────────────
+
+@router.post("/password-reset/request", response_model=dict)
+def request_password_reset(data: PasswordResetRequest, db: Session = Depends(get_db)):
+    """
+    Request a password reset email.
+
+    Always returns 200 so callers cannot enumerate registered emails.
+    If SMTP is not configured the reset link is logged to the server console.
+    """
+    from ..config import settings
+
+    user = db.query(User).filter(User.email == data.email).first()
+    if user:
+        token = generate_reset_token()
+        user.password_reset_token = token
+        user.password_reset_token_expires = datetime.now(timezone.utc) + timedelta(hours=1)
+        db.commit()
+
+        reset_link = f"{settings.FRONTEND_URL}/reset-password?token={token}"
+        try:
+            send_password_reset_email(user.email, reset_link)
+        except Exception as exc:
+            logger.error(f"Failed to send password reset email to {user.email}: {exc}")
+
+    return {"message": "If an account with that email exists, a password reset link has been sent."}
+
+
+@router.post("/password-reset/confirm", response_model=dict)
+def confirm_password_reset(data: PasswordResetConfirm, db: Session = Depends(get_db)):
+    """
+    Set a new password using a valid reset token.
+    The token is cleared after use so it cannot be reused.
+    """
+    user = db.query(User).filter(User.password_reset_token == data.token).first()
+
+    if not user or user.password_reset_token_expires is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired reset token")
+
+    if datetime.now(timezone.utc) > user.password_reset_token_expires:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired reset token")
+
+    user.hashed_password = hash_password(data.new_password)
+    user.password_reset_token = None
+    user.password_reset_token_expires = None
+    db.commit()
+
+    return {"message": "Password reset successfully. You can now log in with your new password."}
+
+
+# ── Change password (authenticated) ──────────────────────────────────────────
+
+@router.patch("/me/password", response_model=dict)
+def change_password(
+    data: ChangePasswordRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Change the current user's password.
+    Requires the correct current password.
+    """
+    if not verify_password(data.current_password, current_user.hashed_password):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Current password is incorrect")
+
+    current_user.hashed_password = hash_password(data.new_password)
+    db.commit()
+
+    return {"message": "Password changed successfully."}
+
+
+# ── Admin: generate reset link without sending email ─────────────────────────
+
+@router.post("/admin/users/{user_id}/generate-reset-link", response_model=dict)
+def admin_generate_reset_link(
+    user_id: str,
+    db: Session = Depends(get_db),
+    owner: User = Depends(require_owner),
+):
+    """
+    Generate a password reset link for any user (owner only).
+    Returns the link directly so the admin can send it manually (Slack, text, etc.)
+    Does not send an email.
+    """
+    from uuid import UUID
+    from ..config import settings
+
+    user = db.query(User).filter(User.id == UUID(user_id)).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    token = generate_reset_token()
+    user.password_reset_token = token
+    user.password_reset_token_expires = datetime.now(timezone.utc) + timedelta(hours=1)
+    db.commit()
+
+    reset_link = f"{settings.FRONTEND_URL}/reset-password?token={token}"
+    return {"reset_link": reset_link, "expires_in": "1 hour"}
 

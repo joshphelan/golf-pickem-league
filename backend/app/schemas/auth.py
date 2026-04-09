@@ -24,6 +24,23 @@ class Token(BaseModel):
     token_type: str = "bearer"
 
 
+class PasswordResetRequest(BaseModel):
+    """Schema for requesting a password reset email."""
+    email: EmailStr
+
+
+class PasswordResetConfirm(BaseModel):
+    """Schema for confirming a password reset with token."""
+    token: str
+    new_password: str = Field(..., min_length=8)
+
+
+class ChangePasswordRequest(BaseModel):
+    """Schema for changing password while logged in."""
+    current_password: str
+    new_password: str = Field(..., min_length=8)
+
+
 class UserResponse(BaseModel):
     """Schema for user data in responses."""
     id: UUID

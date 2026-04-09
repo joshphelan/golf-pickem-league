@@ -26,6 +26,7 @@ export default function AdminUsersPage() {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [processingUserId, setProcessingUserId] = useState<string | null>(null);
+  const [resetLink, setResetLink] = useState<string | null>(null);
   const currentUser = getUser();
 
   if (!currentUser?.is_owner) {
@@ -80,6 +81,23 @@ export default function AdminUsersPage() {
     }
   };
 
+  const generateResetLink = async (userId: string) => {
+    setError('');
+    setSuccessMessage('');
+    setResetLink(null);
+    setProcessingUserId(userId);
+    try {
+      const response = await api.post(`/auth/admin/users/${userId}/generate-reset-link`);
+      setResetLink(response.data.reset_link);
+      setSuccessMessage('Reset link generated — copy it and send to the user. Expires in 1 hour.');
+      setTimeout(() => setSuccessMessage(''), 10000);
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to generate reset link');
+    } finally {
+      setProcessingUserId(null);
+    }
+  };
+
   const toggleOwner = async (userId: string, currentValue: boolean) => {
     setError('');
     setSuccessMessage('');
@@ -114,6 +132,17 @@ export default function AdminUsersPage() {
           {successMessage && (
             <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-4">
               <p>{successMessage}</p>
+            </div>
+          )}
+          {resetLink && (
+            <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-xl mb-4">
+              <p className="text-xs font-medium mb-1">Reset link (expires in 1 hour) — copy and send to user:</p>
+              <input
+                readOnly
+                value={resetLink}
+                onClick={(e) => (e.target as HTMLInputElement).select()}
+                className="w-full text-xs bg-white border border-yellow-300 rounded px-2 py-1.5 font-mono text-yellow-900"
+              />
             </div>
           )}
 
@@ -193,7 +222,16 @@ export default function AdminUsersPage() {
                             {user.is_primary_owner ? (
                               <span className="text-gray-400 italic">Protected</span>
                             ) : isCurrentUser ? (
-                              <span className="text-gray-400 italic">Cannot modify self</span>
+                              <div className="flex flex-col space-y-2">
+                                <span className="text-gray-400 italic text-xs">Cannot modify self</span>
+                                <button
+                                  onClick={() => generateResetLink(user.id)}
+                                  disabled={isProcessing}
+                                  className="text-xs text-[var(--masters-green)] hover:underline disabled:opacity-50 text-left"
+                                >
+                                  Generate reset link
+                                </button>
+                              </div>
                             ) : (
                               <div className="flex flex-col space-y-2">
                                 <label className="flex items-center">
@@ -217,6 +255,14 @@ export default function AdminUsersPage() {
                                   />
                                   <span className="ml-2 text-gray-600">Owner</span>
                                 </label>
+
+                                <button
+                                  onClick={() => generateResetLink(user.id)}
+                                  disabled={isProcessing}
+                                  className="text-xs text-[var(--masters-green)] hover:underline disabled:opacity-50 text-left"
+                                >
+                                  Generate reset link
+                                </button>
                               </div>
                             )}
                           </td>

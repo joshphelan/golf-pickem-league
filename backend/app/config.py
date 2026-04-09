@@ -24,6 +24,12 @@ class Settings(BaseSettings):
     
     # Primary Owner (optional - first user is auto-primary owner)
     PRIMARY_OWNER_EMAIL: Optional[str] = None
+
+    # Email (Resend) - for password reset emails
+    # Get API key from resend.com → API Keys. Requires a verified domain.
+    RESEND_API_KEY: Optional[str] = None
+    RESEND_FROM_EMAIL: str = "noreply@localhost"
+    FRONTEND_URL: str = "http://localhost:3000"
     
     # Scheduler Settings
     ENABLE_AUTO_SYNC: bool = False  # Enable automatic score syncing (default: disabled for dev)
