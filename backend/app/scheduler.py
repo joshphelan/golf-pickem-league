@@ -500,13 +500,13 @@ async def _sync_active_tournament_scores_async():
                     tournament.status = new_status
                     db.commit()
                     status_updated_count += 1
-                    logger.info(f"{tournament.name}: {old_status} → {new_status}")
+                    logger.warning(f"{tournament.name}: {old_status} → {new_status}")
 
                 # PHASE 3: Sync scores if active
                 if new_status == 'active':
                     created, updated = sync_scores_from_leaderboard(tournament, leaderboard_data, db)
                     synced_count += 1
-                    logger.info(
+                    logger.warning(
                         f"Synced {tournament.name} ({local_hour:02d}:00 {tournament.timezone}): "
                         f"{created} created, {updated} updated"
                     )
@@ -522,7 +522,7 @@ async def _sync_active_tournament_scores_async():
                 continue
 
         if synced_count > 0 or status_updated_count > 0:
-            logger.info(
+            logger.warning(
                 f"Score sync complete: {synced_count} tournaments synced, "
                 f"{status_updated_count} status updates"
             )
