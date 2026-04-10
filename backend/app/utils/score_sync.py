@@ -138,7 +138,48 @@ def sync_scores_from_leaderboard(tournament, leaderboard_data: Dict[str, Any], d
                 db.add(new_score)
                 scores_created += 1
 
+        # Handle mid-round players: API only includes completed rounds in the
+        # rounds array, so players still on the course are missing their current
+        # round. Use top-level total and currentRoundScore for live scores.
+        round_complete = row.get('roundComplete', True)
+        if not round_complete:
+            player_current_round = row.get('currentRound')
+            if isinstance(player_current_round, dict):
+                player_current_round = int(player_current_round.get('$numberInt', 0))
+            elif player_current_round is not None:
+                player_current_round = int(player_current_round)
+
+            if player_current_round and player_current_round > 0:
+                total_score = parse_golf_score(row.get('total', 'E'))
+                current_round_score = parse_golf_score(row.get('currentRoundScore', 'E'))
+
+                if total_score is not None:
+                    existing_score = db.query(PlayerScore).filter(
+                        PlayerScore.tournament_id == tournament.id,
+                        PlayerScore.player_id == player.id,
+                        PlayerScore.round == player_current_round
+                    ).first()
+
+                    if existing_score:
+                        existing_score.round_score = current_round_score
+                        existing_score.total_score = total_score
+                        existing_score.position = position
+                        existing_score.made_cut = made_cut
+                        scores_updated += 1
+                    else:
+                        new_score = PlayerScore(
+                            tournament_id=tournament.id,
+                            player_id=player.id,
+                            round=player_current_round,
+                            round_score=current_round_score,
+                            total_score=total_score,
+                            position=position,
+                            made_cut=made_cut
+                        )
+                        db.add(new_score)
+                        scores_created += 1
+
     db.commit()
 
-    logger.info(f"Synced {tournament.name}: {scores_created} created, {scores_updated} updated")
+    logger.warning(f"Synced {tournament.name}: {scores_created} created, {scores_updated} updated")
     return (scores_created, scores_updated)

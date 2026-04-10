@@ -19,8 +19,6 @@ from ..services.golf_api_service import golf_api
 from ..utils.dependencies import get_current_user, require_owner
 from ..utils.date_parser import parse_api_dates
 from ..utils.tournament_status import determine_tournament_status
-from ..utils.score_converter import parse_golf_score
-
 router = APIRouter(prefix="/api/tournaments", tags=["Tournaments"])
 
 
@@ -396,11 +394,12 @@ async def sync_tournament_scores(
 ):
     """
     Sync scores from Golf API leaderboard.
-    Owner only.
-    
+
     Fetches latest scores from /leaderboard endpoint and updates PlayerScore records.
     Also updates tournament status based on dates.
     """
+    from ..utils.score_sync import sync_scores_from_leaderboard
+
     # Get tournament
     tournament = db.query(Tournament).filter(Tournament.id == tournament_id).first()
     if not tournament:
@@ -408,7 +407,7 @@ async def sync_tournament_scores(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Tournament not found"
         )
-    
+
     # Update status based on dates
     new_status = determine_tournament_status(
         tournament.start_date,
@@ -418,7 +417,7 @@ async def sync_tournament_scores(
     if new_status != tournament.status:
         tournament.status = new_status
         db.commit()
-    
+
     # Fetch leaderboard from API
     try:
         leaderboard_data = await golf_api.get_leaderboard(
@@ -431,129 +430,13 @@ async def sync_tournament_scores(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch leaderboard from Golf API: {str(e)}"
         )
-    
-    # Extract leaderboard rows
-    leaderboard_rows = leaderboard_data.get('leaderboardRows', [])
-    if not leaderboard_rows:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No leaderboard data available for this tournament"
-        )
-    
-    # Get current round from API
-    current_round = leaderboard_data.get('roundId', 4)
-    if isinstance(current_round, dict):
-        current_round = int(current_round.get('$numberInt', 4))
-    
-    scores_updated = 0
-    scores_created = 0
-    
-    # Process each player's score
-    for row in leaderboard_rows:
-        player_id_api = str(row.get('playerId'))
-        if not player_id_api:
-            continue
-        
-        # Find player in database
-        player = db.query(Player).filter(Player.player_id == player_id_api).first()
-        if not player:
-            # Player not in our database yet (not imported with tournament)
-            continue
-        
-        # Parse position and status (same for all rounds)
-        position_str = row.get('position', '')
-        try:
-            position = int(position_str.replace('T', ''))
-        except (ValueError, AttributeError):
-            position = None
-        
-        player_status = row.get('status', '')
-        made_cut = player_status not in ['CUT', 'WD', 'WITHDRAWN']
-        
-        # Parse rounds array to get per-round scores
-        rounds = row.get('rounds', [])
-        if not rounds:
-            # Fallback: use top-level total for current round only
-            total_score_str = row.get('total', 'E')
-            total_score = parse_golf_score(total_score_str)
-            
-            if total_score is not None:
-                existing_score = db.query(PlayerScore).filter(
-                    PlayerScore.tournament_id == tournament.id,
-                    PlayerScore.player_id == player.id,
-                    PlayerScore.round == current_round
-                ).first()
-                
-                if existing_score:
-                    existing_score.total_score = total_score
-                    existing_score.position = position
-                    existing_score.made_cut = made_cut
-                    scores_updated += 1
-                else:
-                    new_score = PlayerScore(
-                        tournament_id=tournament.id,
-                        player_id=player.id,
-                        round=current_round,
-                        total_score=total_score,
-                        position=position,
-                        made_cut=made_cut
-                    )
-                    db.add(new_score)
-                    scores_created += 1
-            continue
-        
-        # Process each round and calculate cumulative scores
-        cumulative_score = 0
-        for round_data in rounds:
-            round_num = round_data.get('roundId')
-            
-            # Parse roundId if it's in MongoDB format
-            if isinstance(round_num, dict):
-                round_num = int(round_num.get('$numberInt', 0))
-            elif round_num is not None:
-                round_num = int(round_num)
-            
-            score_to_par_str = round_data.get('scoreToPar', 'E')
-            round_score = parse_golf_score(score_to_par_str)
-            
-            if round_num is None or round_num == 0 or round_score is None:
-                continue
-            
-            # Add this round's score to cumulative total
-            cumulative_score += round_score
-            
-            # Upsert score record for this round
-            existing_score = db.query(PlayerScore).filter(
-                PlayerScore.tournament_id == tournament.id,
-                PlayerScore.player_id == player.id,
-                PlayerScore.round == round_num
-            ).first()
-            
-            if existing_score:
-                existing_score.round_score = round_score
-                existing_score.total_score = cumulative_score
-                existing_score.position = position
-                existing_score.made_cut = made_cut
-                scores_updated += 1
-            else:
-                new_score = PlayerScore(
-                    tournament_id=tournament.id,
-                    player_id=player.id,
-                    round=round_num,
-                    round_score=round_score,
-                    total_score=cumulative_score,
-                    position=position,
-                    made_cut=made_cut
-                )
-                db.add(new_score)
-                scores_created += 1
-    
-    db.commit()
+
+    # Use shared sync logic
+    created, updated = sync_scores_from_leaderboard(tournament, leaderboard_data, db)
+
     db.refresh(tournament)
-    
-    # Log sync result
-    print(f"Synced scores for tournament {tournament.name}: {scores_created} created, {scores_updated} updated")
-    
+    print(f"Synced scores for tournament {tournament.name}: {created} created, {updated} updated")
+
     return tournament
 
 
